@@ -27,10 +27,7 @@ import time
 from os import listdir, environ as Env, getcwd as cwd
 from os.path import isdir, normpath, expanduser, join as J
 
-# {{{ conveniences
-class sym: pass
-
-class BookmarkFile(object):
+class BookmarkFile(object): # {{{
     """Abstraction for bookmark file.
 
     Remember to make sure objects are explicitly destructed.
@@ -54,6 +51,11 @@ class BookmarkFile(object):
         if d in self.l: self.c, self.l = True, [x for x in self.l if x != d]
     def __contains__(self, d): return twiddle(d) in self.l
     def __iter__(self):        return self.l.__iter__()
+    # }}}
+
+# {{{ conveniences
+class sym: pass
+
 
 def read_homes():
     f = file('/etc/passwd')
@@ -62,7 +64,7 @@ def read_homes():
     return dict([ (x[0],x[5]) for x in l
                   if 999 < int(x[2]) < 1999 or int(x[2]) == 0])
 
-DIRT=sorted([ x for x in Env.get('DIRT','~/').split(':') if x ]
+DIRT=sorted([ x for x in Env.get('DIRT','~/').split(':') if x ])
 OLDD=DIRT[:]
 HOME=Env.get('HOME')
 HOMES=read_homes()
@@ -92,6 +94,7 @@ def untwid(p=None):
 class Menu(object): # {{{
     QUIT = sym()
     step = 10
+    cc   = [ C.A_NORMAL, C.A_REVERSE ]
     def _prev(o):     o.s = max(           0, o.s - 1)
     def _next(o):     o.s = min(len(o.l) - 1, o.s + 1)
     def _pgup(o):     o.s = max(           0, o.s - o.step)
@@ -111,14 +114,28 @@ class Menu(object): # {{{
           ord('q'):     _done,
           27:           _done,
     }
-
     def __init__(self, w, l, s=0, extra={}):
-        self.w, self.l, self.s, self.x = w, l, s, extra
+        self.w, self.l, self.s, self.x, self._z = w, l, s, extra, None
+    def _repad(self):
+        _z = (len(self.l)+1, max([len(x)+1 for x in self.l]))
+        if self._z != _z:
+            self._z = _z
+            self._p = C.newpad(*self._z)
+        return self._p
     def draw(self):
-        w, l, s = self.w, self.l, self.s
+        p = self._repad()
+        w, l, s, z, cc = self.w, self.l, self.s, self._z, self.cc
+        y, x = w.getmaxyx()
+        if y < 2 or x < 4: raise RuntimeError
+        #
         w.clear()
-        for i in range(len(l)):
-            w.addstr(1+i, 1, l[i], [C.A_NORMAL, C.A_REVERSE][i==s])
+        for i in range(len(l)): p.addstr(i, 0, l[i], cc[i==s])
+        #
+        #destwin[, sminrow, smincol, dminrow, dmincol, dmaxrow, dmaxcol ]
+        q = max(s - y/2, 0)
+        #raise RuntimeError, (z, q,0, 1,1, min(y, z[0]-1-q), min(x, z[1]-1))
+        p.overlay(w, q,0, 1,1, min(y-1, z[0]-1-q), min(x-1, z[1]-1))
+        #
         w.refresh()
     def run(self):
         while True:
@@ -131,7 +148,7 @@ class Menu(object): # {{{
                 if c: return c != Menu.QUIT and c or None
     # }}}
 
-class DirtMenu(Menu):
+class DirtMenu(Menu): # {{{
     _desc = lambda o: o.l[o.s][-1]=='+' and TreeMenu(o.w, o.l[o.s])
     _ascd = lambda o: TreeMenu(o.w, o.l[o.s]+'/../../', o.x['here'])
     _tree = lambda o: TreeMenu(o.w)
@@ -144,12 +161,14 @@ class DirtMenu(Menu):
     m = dict(Menu.m.items() + {
             C.KEY_RIGHT: _desc,
             C.KEY_LEFT:  _ascd,
-            ord('b'):    _book,
+            ord('B'):    _book,
+            ord('S'):    _save,
             ord('d'):    _tree,
-            ord('s'):    _save,
             ord('h'):    lambda o: TreeMenu(o.w, '~'),
+            ord('b'):    lambda o: BookmarkMenu(o.w),
             ord('~'):    lambda o: HomeMenu(o.w, o.x['here']),
             }.items())
+    # }}}
 
 class TreeMenu(DirtMenu): # {{{
     def _dots(o):
@@ -160,10 +179,11 @@ class TreeMenu(DirtMenu): # {{{
             ord('.'):    _dots,
             }.items())
     def mklist(self, p):
+        p = untwid(p)
         l = sorted([ twiddle(J(p,x), True)
-                     for x in listdir(untwid(p))
+                     for x in listdir(p)
                      if isdir(J(p,x)) and (self.dots or x[0] != '.') ])
-        return l or self.mklist(p+'/../')
+        return l or (untwid(p) != '/' and self.mklist(p+'/../')) or ['~']
     def __init__(self, w, p=None, h=None):
         self.dots = False
         h = twiddle(h or cwd(), True)
@@ -174,10 +194,12 @@ class TreeMenu(DirtMenu): # {{{
     # }}}
 
 class EnvMenu(DirtMenu): # {{{
+    _ascd = lambda o: TreeMenu(o.w, o.l[o.s]+'/../', o.x['here'])
     def _del(o):
         DIRT.remove(twiddle(o.l[o.s]))
         Menu._del(o)
     m = dict(DirtMenu.m.items() + {
+            C.KEY_LEFT:  _ascd,
             ord('q'):    Menu._done,
             ord('x'):    _del,
             }.items())
@@ -189,7 +211,7 @@ class EnvMenu(DirtMenu): # {{{
     # }}}
 
 class HomeMenu(DirtMenu): # {{{
-    def __init__(self, w, h):
+    def __init__(self, w, h=None):
         h = twiddle(cwd(), True)
         l = sorted([ '~'+x for x in HOMES.keys() ])
         s = (h in l and l.index(h) or len(l)/2)
@@ -200,11 +222,11 @@ class BookmarkMenu(DirtMenu): # {{{
     def _del(o):
         BOOK.remove(twiddle(o.l[o.s]))
         Menu._del(o)
-    def __init__(self, w, h):
+    def __init__(self, w, h=None):
         h = twiddle(cwd(), True)
         l = sorted([ twiddle(x, True) for x in BOOK ])
         s = (h in l and l.index(h) or len(l)/2)
-        super(HomeMenu, self).__init__(w, l, s, {'here': h})
+        super(BookmarkMenu, self).__init__(w, l, s, {'here': h})
     # }}}
 
 def wrap(f): # {{{
