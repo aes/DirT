@@ -94,17 +94,17 @@ class BookmarkFile(object): # {{{
         if not self.c: return
         try:
             f = file(expanduser('~/.dirt_bm'), 'w')
-            f.write("\n".join(self.l))
+            f.write("".join([ d.s+"\n" for d in self.l ]))
             f.close()
         except:
             pass
     def append(self, d):
-        d = ( DirName.fetch(d) ).s
+        d = DirName.fetch(d)
         if d not in self.l: self.c, self.l = True, sorted(self.l+[d])
     def remove(self, d):
-        d = ( DirName.fetch(d) ).s
+        d = DirName.fetch(d)
         if d in self.l: self.c, self.l = True, [x for x in self.l if x != d]
-    def __contains__(self, d): return ( DirName.fetch(d) ).s in self.l
+    def __contains__(self, d): return DirName.fetch(d) in self.l
     def __iter__(self):        return self.l.__iter__()
     # }}}
 
