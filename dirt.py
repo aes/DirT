@@ -82,9 +82,10 @@ class BookmarkFile(object): # {{{
     Remember to make sure objects are explicitly destructed.
     """
     def __init__(self):
-        try:    self.l = sorted([ DirName.fetch(l)
-                                  for l in file(expanduser('~/.dirt_bm')) ])
-        except: self.l = []
+        try:    self.l = sorted([ DirName.fetch(l.strip())
+                                  for l in file(expanduser('~/.dirt_bm')) ]
+                                or ['~'])
+        except: self.l = ['~']
         self.c = False
     def __del__(self):
         """Save if changed."""
@@ -154,7 +155,7 @@ class Menu(object): # {{{
     def __init__(self, w, l, s=0, extra={}):
         self.w, self.l, self.s, self.x, self._z = w, l, s, extra, None
     def _repad(self):
-        _z = (len(self.l)+1, max([len(x)+1 for x in self.l]))
+        _z = (len(self.l)+1, max([2]+[len(x)+1 for x in self.l]))
         if self._z != _z:
             self._z = _z
             self._p = C.newpad(*self._z)
@@ -193,11 +194,11 @@ class DirtMenu(Menu): # {{{
     _ascd = lambda o: TreeMenu(o.w, o.l[o.s].s+'/../../', o.x['here'])
     _tree = lambda o: TreeMenu(o.w)
     def _book(o):
-        p = twiddle(o.l[o.s])
-        if p not in BOOK: BOOK.append(p.s)
+        p = DirName.fetch(o.l[o.s]).s
+        if p not in BOOK: BOOK.append(p)
     def _save(o):
-        p = twiddle(o.l[o.s])
-        if p not in DIRT: DIRT.append(p.s)
+        p = DirName.fetch(o.l[o.s]).s
+        if p not in DIRT: DIRT.append(p)
     m = dict(Menu.m.items() + {
             C.KEY_RIGHT: _desc,
             C.KEY_LEFT:  _ascd,
@@ -302,5 +303,5 @@ if __name__ == '__main__': # {{{
     p = wrap(run_menus)
     if OLDD != DIRT:     print >>sys.stderr, 'DIRT=' + ':'.join(DIRT), ';',
     if p and p != cwd(): print >>sys.stderr, 'cd ' + p, ';'
-    del BOOK
+    BOOK.save()
     # }}}
