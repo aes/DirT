@@ -21,13 +21,39 @@ alias d='eval $(dirt 2>&1 1>/dev/tty)'
 """
 # }}}
 
-import sys,os,curses as C,os.path
-import time
+import sys,os,curses as C,os.path, re
 
 from os import listdir, environ as Env, getcwd as cwd
 from os.path import isdir, normpath, expanduser, join as J
 
+def u8(s):
+    if not isinstance(s, unicode): s = unicode(s, 'utf-8', 'replace')
+    return s.encode('utf-8')
+
+class Subber(object): # {{{
+    cfg_re = re.compile('^([^\t]*)\t+(.*)$')
+    def _comp(cls, p):
+        try:    return re.compile(p)
+        except: return None
+    _comp = classmethod(_comp)
+    #
+    def __init__(self):
+        try:    s = [ x.strip() for x in file(expanduser('~/.dirt_subs')) ]
+        except: s = []
+        s = [ self.cfg_re.match(x) for x in s ]
+        s = [ (self._comp(x.group(1)), x.group(2)) for x in s if x ]
+        self.subs = [ x for x in s if x[0] ]
+        self.active = True
+    def add(self, pat, repl):
+        pat = self.comp(pat)
+        if pat: self.subs.append( (pat,repl) )
+    def __call__(self, q):
+        for pat,repl in self.subs: q = pat.sub(repl, q)
+        return q
+    # }}}
+
 class DirName(object): # {{{
+    subs = Subber()
     cache = {}
     def norm(cls, p):
         return normpath(expanduser((p or cwd()).replace(' +','')))
@@ -51,7 +77,7 @@ class DirName(object): # {{{
         try:    l = listdir(self.p)
         except: return False
         for n in [ x for x in l if x[0] != '.' ]:
-            if isdir(self.p+'/'+n):
+            if isdir(u8(self.p+'/'+n)):
                 return True
         return False
     def _examine(self, H=Env.get('HOME')):
@@ -61,19 +87,23 @@ class DirName(object): # {{{
             for u,d in HOMES.items():
                 if p.find(d) == 0:      p = J('~'+u, p[len(d):])
         self.s = p
-        self.d = p + ['',' +'][self.c]
+        self.d = self.subs(p) + ['',' +'][self.c]
         return p or './'
     #
+    def parent(self):         return normpath(J, '..')
+    def is_root(self):        return self.p == '/'
+    def __bool__(self):       return bool(self.d)
     def __cmp__(self, other):
         if isinstance(other,    DirName): return cmp(self.p, other)
         if isinstance(other, basestring): return cmp(self.p, other)
         raise TypeError, self, other
-    def parent(self):         return normpath(J, '..')
-    def is_root(self):        return self.p == '/'
     def __len__(self):        return len(self.d)
-    def __add__(self, other): return J(self.p, unicode(other))
+    def __add__(self, other):
+        if isinstance(other, DirName): return J(self.p, other.p)
+        else:                          return J(self.p, u8(other))
     def __str__(self):        return self.d
-    def __unicode__(self):    return self.p
+    def __unicode__(self):    return self.d
+    def __repr__(self):       return self.p
     # }}}
 
 class BookmarkFile(object): # {{{
@@ -112,12 +142,8 @@ class BookmarkFile(object): # {{{
 class sym: pass
 
 def read_homes():
-    try:
-        f = file('/etc/passwd')
-        l = [ x.split(':') for x in f ]
-        f.close()
-    except:
-        l = []
+    try:    l = [ x.split(':') for x in file('/etc/passwd') ]
+    except: l = []
     return dict([ (x[0],x[5]) for x in l
                   if 999 < int(x[2]) < 1999 or int(x[2]) == 0])
 
@@ -170,7 +196,7 @@ class Menu(object): # {{{
         w.clear()
         w.addstr(0, 1, n, C.A_BOLD)
         #
-        for i in range(len(l)): p.addstr(i, 0, str(l[i]), cc[i==s])
+        for i in range(len(l)): p.addstr(i, 0, u8(l[i].d), cc[i==s])
         #
         #destwin[, sminrow, smincol, dminrow, dmincol, dmaxrow, dmaxcol ]
         q = max(s - y/2, 0)
@@ -193,6 +219,8 @@ class DirtMenu(Menu): # {{{
     _desc = lambda o: o.l[o.s].c and TreeMenu(o.w, o.l[o.s])
     _ascd = lambda o: TreeMenu(o.w, o.l[o.s].s+'/../../', o.x['here'])
     _tree = lambda o: TreeMenu(o.w)
+    def _subs(o):
+        DirName.subs.active = not DirName.subs.active
     def _book(o):
         p = DirName.fetch(o.l[o.s]).s
         if p not in BOOK: BOOK.append(p)
@@ -209,6 +237,7 @@ class DirtMenu(Menu): # {{{
             ord('d'):    _tree,
             ord('h'):    lambda o: TreeMenu(o.w, '~'),
             ord('q'):    Menu._done,
+            ord('r'):    _subs,
             ord('~'):    lambda o: HomeMenu(o.w, o.x['here']),
             }.items())
     # }}}

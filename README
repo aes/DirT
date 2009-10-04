@@ -1,5 +1,4 @@
 
-
 LICENCE
 
 I am quite unimpressed by the whole 'occupation of the world of ideas by
@@ -16,12 +15,11 @@ If not, well, you can...
 
 UNDER NO CIRCUMSTANCES WILL I ACCEPT ANY LEGAL RESPONSIBILITY FOR DEFECTS.
 
-This software may be used for evil as well as for good. (why limit people?)
+This software may be used for evil as well as for good. (none of my business.)
 
 Anders Eurenius <aes@nerdshack.com>
----
 
-Keys:
+# Keys:
 
  Up / Down:	Browse
  Enter:		Exit and cd to this directory
@@ -42,10 +40,16 @@ Keys:
 
  x		Remove entry (from Session / Bookmarks)
 
+# (Display) Substition File
 
+If you want some dirs to be displayed as something other than the path, you
+can enter substitution patterns in a file called ~/.dirt_subs. In the subs
+file patterns and replacements are listed, one per line separated by one or
+more tabs:
 
+pattern (one or more tabs) replacement
 
-
-
-
+Lines that don't follow this pattern are ignored. If you need the pattern to
+include tabs, you can use \t. Replacements can also include \1 or \g<foo> as
+the replacements are done using the standard python re package.
 
