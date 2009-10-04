@@ -110,11 +110,13 @@ class BookmarkFile(object): # {{{
 # {{{ conveniences
 class sym: pass
 
-
 def read_homes():
-    f = file('/etc/passwd')
-    l = [ x.split(':') for x in f ]
-    f.close()
+    try:
+        f = file('/etc/passwd')
+        l = [ x.split(':') for x in f ]
+        f.close()
+    except:
+        l = []
     return dict([ (x[0],x[5]) for x in l
                   if 999 < int(x[2]) < 1999 or int(x[2]) == 0])
 
