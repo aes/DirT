@@ -13,7 +13,7 @@ function pcmd()
           tr : "\n" |\
           sed "s@^${HOME}@\~@" |\
           sort -u |\
-           tr "\n" : )
+          tr "\n" : )
 }
 export DIRT=""
 PROMPT_COMMAND=pcmd
@@ -189,9 +189,10 @@ class DirtMenu(Menu): # {{{
             C.KEY_LEFT:  _ascd,
             ord('B'):    _book,
             ord('S'):    _save,
+            ord('b'):    lambda o: BookmarkMenu(o.w),
+            ord('s'):    lambda o: EnvMenu(o.w),
             ord('d'):    _tree,
             ord('h'):    lambda o: TreeMenu(o.w, '~'),
-            ord('b'):    lambda o: BookmarkMenu(o.w),
             ord('q'):    Menu._done,
             ord('~'):    lambda o: HomeMenu(o.w, o.x['here']),
             }.items())
@@ -203,7 +204,6 @@ class TreeMenu(DirtMenu): # {{{
         o.l = o.mklist(o.x['here'])
         o.s = min(o.s, len(o.l)-1)
     m = dict(DirtMenu.m.items() + {
-            ord('e'):    lambda o: EnvMenu(o.w),
             ord('.'):    _dots,
             }.items())
     def mklist(self, p):
@@ -284,7 +284,7 @@ if __name__ == '__main__': # {{{
     def run_menus(s):
         m = EnvMenu(s)
         while isinstance(m, Menu): m = m.run()
-        return m.replace(' +','')
+        return m.s.replace(' +','')
     p = wrap(run_menus)
     if OLDD != DIRT:     print >>sys.stderr, 'DIRT=' + ':'.join(DIRT), ';',
     if p and p != cwd(): print >>sys.stderr, 'cd ' + p, ';'
