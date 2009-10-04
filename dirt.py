@@ -27,52 +27,6 @@ import time
 from os import listdir, environ as Env, getcwd as cwd
 from os.path import isdir, normpath, expanduser, join as J
 
-class BookmarkFile(object): # {{{
-    """Abstraction for bookmark file.
-
-    Remember to make sure objects are explicitly destructed.
-    """
-    def __init__(self):
-        try:    self.l = sorted([ l for l in file(expanduser('~/.dirt_bm')) ])
-        except: self.l = []
-        self.c = False
-    def __del__(self):
-        """Save if changed."""
-        self.save()
-    def save(self):
-        if not self.c: return
-        f = file(expanduser('~/.dirt_bm'), 'w')
-        f.write("\n".join(self.l))
-        f.close()
-    def append(self, d):
-        d = twiddle(d)
-        if d not in self.l: self.c, self.l = True, sorted(self.l+[d])
-    def remove(self, d):
-        d = twiddle(d)
-        if d in self.l: self.c, self.l = True, [x for x in self.l if x != d]
-    def __contains__(self, d): return twiddle(d) in self.l
-    def __iter__(self):        return self.l.__iter__()
-    # }}}
-
-# {{{ conveniences
-class sym: pass
-
-
-def read_homes():
-    f = file('/etc/passwd')
-    l = [ x.split(':') for x in f ]
-    f.close()
-    return dict([ (x[0],x[5]) for x in l
-                  if 999 < int(x[2]) < 1999 or int(x[2]) == 0])
-
-DIRT=sorted([ x for x in Env.get('DIRT','~/').split(':') if x ])
-OLDD=DIRT[:]
-HOME=Env.get('HOME')
-HOMES=read_homes()
-BOOK=BookmarkFile()
-
-# }}}
-
 class DirName(object): # {{{
     cache = {}
     def fetch(cls, p):
@@ -96,7 +50,7 @@ class DirName(object): # {{{
             if isdir(self.p+'/'+n):
                 return True
         return False
-    def _examine(self, H=HOME):
+    def _examine(self, H=Env.get('HOME')):
         p = self.p
         if p and p.find(H) == 0:        p = '~'+p[len(H):]
         else:
@@ -117,6 +71,56 @@ class DirName(object): # {{{
     def __str__(self):        return self.d
     def __unicode__(self):    return self.p
     # }}}
+
+class BookmarkFile(object): # {{{
+    """Abstraction for bookmark file.
+
+    Remember to make sure objects are explicitly destructed.
+    """
+    def __init__(self):
+        try:    self.l = sorted([ DirName.fetch(l)
+                                  for l in file(expanduser('~/.dirt_bm')) ])
+        except: self.l = []
+        self.c = False
+    def __del__(self):
+        """Save if changed."""
+        self.save()
+    def save(self):
+        if not self.c: return
+        try:
+            f = file(expanduser('~/.dirt_bm'), 'w')
+            f.write("\n".join(self.l))
+            f.close()
+        except:
+            pass
+    def append(self, d):
+        d = ( DirName.fetch(d) ).s
+        if d not in self.l: self.c, self.l = True, sorted(self.l+[d])
+    def remove(self, d):
+        d = ( DirName.fetch(d) ).s
+        if d in self.l: self.c, self.l = True, [x for x in self.l if x != d]
+    def __contains__(self, d): return ( DirName.fetch(d) ).s in self.l
+    def __iter__(self):        return self.l.__iter__()
+    # }}}
+
+# {{{ conveniences
+class sym: pass
+
+
+def read_homes():
+    f = file('/etc/passwd')
+    l = [ x.split(':') for x in f ]
+    f.close()
+    return dict([ (x[0],x[5]) for x in l
+                  if 999 < int(x[2]) < 1999 or int(x[2]) == 0])
+
+DIRT=sorted([ x for x in Env.get('DIRT','~/').split(':') if x ])
+OLDD=DIRT[:]
+HOME=Env.get('HOME')
+HOMES=read_homes()
+BOOK=BookmarkFile()
+
+# }}}
 
 class Menu(object): # {{{
     QUIT = sym()
