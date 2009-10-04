@@ -70,26 +70,52 @@ HOME=Env.get('HOME')
 HOMES=read_homes()
 BOOK=BookmarkFile()
 
-def has_dir(p):
-    try:    l = listdir(p)
-    except: return False
-    for n in [ x for x in l if x[0] != '.' ]:
-        if isdir(p+'/'+n):
-            return True
-
-def twiddle(p, plus=False, H=HOME):
-    p = untwid(p)
-    if plus and has_dir(p):    p = p+' +'
-    if p and p.find(H) == 0:   p = '~'+p[len(H):]
-    else:
-        for u,d in HOMES.items():
-            if p.find(d) == 0: p = J('~'+u, p[len(d):])
-    if p:                      p = normpath(p)
-    return p or './'
-
-def untwid(p=None):
-    return normpath(expanduser((p or cwd()).replace(' +','')))
 # }}}
+
+class DirName(object): # {{{
+    cache = {}
+    def fetch(cls, p):
+        if isinstance(p, DirName): return p
+        normpath(expanduser(p.replace(' +','') or cwd()))
+        x = cls.cache.get(p)
+        if x: return x
+        x = DirName(p)
+        cls.cache[x.p] = x
+        return x
+    fetch = classmethod(fetch)
+    #
+    def __init__(self, p=None):
+        self.p = normpath(expanduser(p or cwd()))
+        self.c = self._has_dir()
+        self._examine()
+    def _has_dir(self):
+        try:    l = listdir(self.p)
+        except: return False
+        for n in [ x for x in l if x[0] != '.' ]:
+            if isdir(self.p+'/'+n):
+                return True
+        return False
+    def _examine(self, H=HOME):
+        p = self.p
+        if p and p.find(H) == 0:        p = J('~', p[len(H):])
+        else:
+            for u,d in HOMES.items():
+                if p.find(d) == 0:      p = J('~'+u, p[len(d):])
+        self.s = p
+        self.d = p + ['',' +'][self.c]
+        return p or './'
+    #
+    def __cmp__(self, other):
+        if isinstance(other,    DirName): return cmp(self.p, other)
+        if isinstance(other, basestring): return cmp(self.p, other)
+        raise TypeError, self, other
+    def parent(self):         return normpath(J, '..')
+    def is_root(self):        return self.p == '/'
+    def __len__(self):        return len(self.d)
+    def __add__(self, other): return J(self.p, str(other))
+    def __str__(self):        return self.d
+    def __unicode__(self):    return self.p
+    # }}}
 
 class Menu(object): # {{{
     QUIT = sym()
@@ -129,7 +155,7 @@ class Menu(object): # {{{
         if y < 2 or x < 4: raise RuntimeError
         #
         w.clear()
-        for i in range(len(l)): p.addstr(i, 0, l[i], cc[i==s])
+        for i in range(len(l)): p.addstr(i, 0, str(l[i]), cc[i==s])
         #
         #destwin[, sminrow, smincol, dminrow, dmincol, dmaxrow, dmaxcol ]
         q = max(s - y/2, 0)
@@ -149,15 +175,15 @@ class Menu(object): # {{{
     # }}}
 
 class DirtMenu(Menu): # {{{
-    _desc = lambda o: o.l[o.s][-1]=='+' and TreeMenu(o.w, o.l[o.s])
+    _desc = lambda o: o.l[o.s].c and TreeMenu(o.w, o.l[o.s])
     _ascd = lambda o: TreeMenu(o.w, o.l[o.s]+'/../../', o.x['here'])
     _tree = lambda o: TreeMenu(o.w)
     def _book(o):
         p = twiddle(o.l[o.s])
-        if p not in BOOK: BOOK.append(p)
+        if p not in BOOK: BOOK.append(p.s)
     def _save(o):
         p = twiddle(o.l[o.s])
-        if p not in DIRT: DIRT.append(p)
+        if p not in DIRT: DIRT.append(p.s)
     m = dict(Menu.m.items() + {
             C.KEY_RIGHT: _desc,
             C.KEY_LEFT:  _ascd,
@@ -166,6 +192,7 @@ class DirtMenu(Menu): # {{{
             ord('d'):    _tree,
             ord('h'):    lambda o: TreeMenu(o.w, '~'),
             ord('b'):    lambda o: BookmarkMenu(o.w),
+            ord('q'):    Menu._done,
             ord('~'):    lambda o: HomeMenu(o.w, o.x['here']),
             }.items())
     # }}}
@@ -174,57 +201,61 @@ class TreeMenu(DirtMenu): # {{{
     def _dots(o):
         o.dots = not o.dots
         o.l = o.mklist(o.x['here'])
+        o.s = min(o.s, len(o.l)-1)
     m = dict(DirtMenu.m.items() + {
             ord('e'):    lambda o: EnvMenu(o.w),
             ord('.'):    _dots,
             }.items())
     def mklist(self, p):
-        p = untwid(p)
-        l = sorted([ twiddle(J(p,x), True)
-                     for x in listdir(p)
-                     if isdir(J(p,x)) and (self.dots or x[0] != '.') ])
-        return l or (untwid(p) != '/' and self.mklist(p+'/../')) or ['~']
+        p = DirName.fetch(p)
+        l = sorted([ DirName.fetch(p+x)
+                     for x in listdir(p.p)
+                     if isdir(p+x) and (self.dots or x[0] != '.') ])
+        if not l:
+            if not p.is_root(): return self.mklist(p+'/../')
+            else:               return [DirName.fetch('/')]
+        else:
+            return l
     def __init__(self, w, p=None, h=None):
         self.dots = False
-        h = twiddle(h or cwd(), True)
-        p = untwid(p or cwd())
+        h = DirName.fetch(h or cwd())
+        p = DirName.fetch(p or cwd())
         l = self.mklist(p)
         s = (h in l and l.index(h) or len(l)/2)
-        super(TreeMenu, self).__init__(w, l, s, {'here': twiddle(p)})
+        super(TreeMenu, self).__init__(w, l, s, {'here': p})
     # }}}
 
 class EnvMenu(DirtMenu): # {{{
     _ascd = lambda o: TreeMenu(o.w, o.l[o.s]+'/../', o.x['here'])
     def _del(o):
-        DIRT.remove(twiddle(o.l[o.s]))
+        DIRT.remove(o.l[o.s].s)
         Menu._del(o)
     m = dict(DirtMenu.m.items() + {
             C.KEY_LEFT:  _ascd,
-            ord('q'):    Menu._done,
             ord('x'):    _del,
             }.items())
     def __init__(self, w, h=None):
-        h = twiddle(cwd(), True)
-        l = sorted([ twiddle(x, True) for x in DIRT ])
+        h = DirName.fetch(h or cwd())
+        l = sorted([ DirName.fetch(x) for x in DIRT ])
         s = (h in l and l.index(h) or len(l)/2)
         super(EnvMenu, self).__init__(w, l, s, {'here': h})
     # }}}
 
 class HomeMenu(DirtMenu): # {{{
     def __init__(self, w, h=None):
-        h = twiddle(cwd(), True)
-        l = sorted([ '~'+x for x in HOMES.keys() ])
+        h = DirName.fetch(h or cwd())
+        l = sorted([ DirName('~'+x) for x in HOMES.keys() ])
         s = (h in l and l.index(h) or len(l)/2)
         super(HomeMenu, self).__init__(w, l, s, {'here': h})
     # }}}
 
 class BookmarkMenu(DirtMenu): # {{{
     def _del(o):
-        BOOK.remove(twiddle(o.l[o.s]))
+        BOOK.remove(o.l[o.s].s)
         Menu._del(o)
     def __init__(self, w, h=None):
-        h = twiddle(cwd(), True)
-        l = sorted([ twiddle(x, True) for x in BOOK ])
+        h = DirName.fetch(h or cwd())
+        l = sorted([ DirName.fetch(x) for x in BOOK ])
         s = (h in l and l.index(h) or len(l)/2)
         super(BookmarkMenu, self).__init__(w, l, s, {'here': h})
     # }}}
@@ -254,7 +285,7 @@ if __name__ == '__main__': # {{{
         m = EnvMenu(s)
         while isinstance(m, Menu): m = m.run()
         return m.replace(' +','')
-    p = untwid(wrap(run_menus))
+    p = wrap(run_menus)
     if OLDD != DIRT:     print >>sys.stderr, 'DIRT=' + ':'.join(DIRT), ';',
     if p and p != cwd(): print >>sys.stderr, 'cd ' + p, ';'
     del BOOK
