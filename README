@@ -1,0 +1,51 @@
+
+
+LICENCE
+
+I am quite unimpressed by the whole 'occupation of the world of ideas by
+grants of arbitrary privilege by government fiat' concept. I am not going to
+read a dozen free licences just to pick one. Instead, I'd like, if at all
+possible, to circumnavigate the whole war: For now, it's GPLv2. If you know
+what that means, good for you, enjoy.
+
+If not, well, you can...
+ * contact me to negotiate a different licence, or
+ * obey whatever all the applicable laws say regardless of license, or
+ * figure out what I meant, or
+ * be naughty, and take the risk.
+
+UNDER NO CIRCUMSTANCES WILL I ACCEPT ANY LEGAL RESPONSIBILITY FOR DEFECTS.
+
+This software may be used for evil as well as for good. (why limit people?)
+
+Anders Eurenius <aes@nerdshack.com>
+---
+
+Keys:
+
+ Up / Down:	Browse
+ Enter:		Exit and cd to this directory
+ q:		Quit, without doing 'cd'.
+
+ Right		Tree-browse directory
+ Left		Tree-browse parent directory
+
+ b		Browse bookmarks
+ B		Bookmark highlighted entry
+
+ s		Browse session (dirs visited in session)
+ S		Save highlighted entry in session
+
+ ~		Homes browser
+ h		Tree browse from home
+ d		Tree browse from current dir
+
+ x		Remove entry (from Session / Bookmarks)
+
+
+
+
+
+
+
+
