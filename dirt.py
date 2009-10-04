@@ -33,7 +33,8 @@ class BookmarkFile(object): # {{{
     Remember to make sure objects are explicitly destructed.
     """
     def __init__(self):
-        self.l = sorted([ l for l in file(expanduser('~/.dirt_bm')) ])
+        try:    self.l = sorted([ l for l in file(expanduser('~/.dirt_bm')) ])
+        except: self.l = []
         self.c = False
     def __del__(self):
         """Save if changed."""
@@ -97,7 +98,7 @@ class DirName(object): # {{{
         return False
     def _examine(self, H=HOME):
         p = self.p
-        if p and p.find(H) == 0:        p = J('~', p[len(H):])
+        if p and p.find(H) == 0:        p = '~'+p[len(H):]
         else:
             for u,d in HOMES.items():
                 if p.find(d) == 0:      p = J('~'+u, p[len(d):])
