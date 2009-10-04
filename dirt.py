@@ -31,7 +31,7 @@ class DirName(object): # {{{
     cache = {}
     def fetch(cls, p):
         if isinstance(p, DirName): return p
-        normpath(expanduser(p.replace(' +','') or cwd()))
+        normpath(expanduser((p or cwd()).replace(' +','')))
         x = cls.cache.get(p)
         if x: return x
         x = DirName(p)
@@ -67,7 +67,7 @@ class DirName(object): # {{{
     def parent(self):         return normpath(J, '..')
     def is_root(self):        return self.p == '/'
     def __len__(self):        return len(self.d)
-    def __add__(self, other): return J(self.p, str(other))
+    def __add__(self, other): return J(self.p, unicode(other))
     def __str__(self):        return self.d
     def __unicode__(self):    return self.p
     # }}}
@@ -181,7 +181,7 @@ class Menu(object): # {{{
 
 class DirtMenu(Menu): # {{{
     _desc = lambda o: o.l[o.s].c and TreeMenu(o.w, o.l[o.s])
-    _ascd = lambda o: TreeMenu(o.w, o.l[o.s]+'/../../', o.x['here'])
+    _ascd = lambda o: TreeMenu(o.w, o.l[o.s].s+'/../../', o.x['here'])
     _tree = lambda o: TreeMenu(o.w)
     def _book(o):
         p = twiddle(o.l[o.s])
@@ -223,15 +223,15 @@ class TreeMenu(DirtMenu): # {{{
             return l
     def __init__(self, w, p=None, h=None):
         self.dots = False
-        h = DirName.fetch(h or cwd())
-        p = DirName.fetch(p or cwd())
+        h = DirName.fetch(h)
+        p = DirName.fetch(p)
         l = self.mklist(p)
         s = (h in l and l.index(h) or len(l)/2)
         super(TreeMenu, self).__init__(w, l, s, {'here': p})
     # }}}
 
 class EnvMenu(DirtMenu): # {{{
-    _ascd = lambda o: TreeMenu(o.w, o.l[o.s]+'/../', o.x['here'])
+    _ascd = lambda o: TreeMenu(o.w, o.l[o.s].s+'/../', o.x['here'])
     def _del(o):
         DIRT.remove(o.l[o.s].s)
         Menu._del(o)
@@ -240,7 +240,7 @@ class EnvMenu(DirtMenu): # {{{
             ord('x'):    _del,
             }.items())
     def __init__(self, w, h=None):
-        h = DirName.fetch(h or cwd())
+        h = DirName.fetch(h)
         l = sorted([ DirName.fetch(x) for x in DIRT ])
         s = (h in l and l.index(h) or len(l)/2)
         super(EnvMenu, self).__init__(w, l, s, {'here': h})
@@ -248,7 +248,7 @@ class EnvMenu(DirtMenu): # {{{
 
 class HomeMenu(DirtMenu): # {{{
     def __init__(self, w, h=None):
-        h = DirName.fetch(h or cwd())
+        h = DirName.fetch(h)
         l = sorted([ DirName('~'+x) for x in HOMES.keys() ])
         s = (h in l and l.index(h) or len(l)/2)
         super(HomeMenu, self).__init__(w, l, s, {'here': h})
