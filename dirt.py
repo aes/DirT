@@ -29,9 +29,13 @@ from os.path import isdir, normpath, expanduser, join as J
 
 class DirName(object): # {{{
     cache = {}
+    def norm(cls, p):
+        return normpath(expanduser((p or cwd()).replace(' +','')))
+    norm = classmethod(norm)
     def fetch(cls, p):
         if isinstance(p, DirName): return p
-        normpath(expanduser((p or cwd()).replace(' +','')))
+        if p and p[:3] == '../': p = cls.norm(cwd()+'/../')
+        else:                    p = cls.norm(p)
         x = cls.cache.get(p)
         if x: return x
         x = DirName(p)
@@ -159,7 +163,10 @@ class Menu(object): # {{{
         y, x = w.getmaxyx()
         if y < 2 or x < 4: raise RuntimeError
         #
+        n = self.__class__.__name__.replace('Menu','')
         w.clear()
+        w.addstr(0, 1, n, C.A_BOLD)
+        #
         for i in range(len(l)): p.addstr(i, 0, str(l[i]), cc[i==s])
         #
         #destwin[, sminrow, smincol, dminrow, dmincol, dmaxrow, dmaxcol ]
@@ -195,7 +202,7 @@ class DirtMenu(Menu): # {{{
             ord('B'):    _book,
             ord('S'):    _save,
             ord('b'):    lambda o: BookmarkMenu(o.w),
-            ord('s'):    lambda o: EnvMenu(o.w),
+            ord('s'):    lambda o: SessionMenu(o.w),
             ord('d'):    _tree,
             ord('h'):    lambda o: TreeMenu(o.w, '~'),
             ord('q'):    Menu._done,
@@ -230,7 +237,7 @@ class TreeMenu(DirtMenu): # {{{
         super(TreeMenu, self).__init__(w, l, s, {'here': p})
     # }}}
 
-class EnvMenu(DirtMenu): # {{{
+class SessionMenu(DirtMenu): # {{{
     _ascd = lambda o: TreeMenu(o.w, o.l[o.s].s+'/../', o.x['here'])
     def _del(o):
         DIRT.remove(o.l[o.s].s)
@@ -243,7 +250,7 @@ class EnvMenu(DirtMenu): # {{{
         h = DirName.fetch(h)
         l = sorted([ DirName.fetch(x) for x in DIRT ])
         s = (h in l and l.index(h) or len(l)/2)
-        super(EnvMenu, self).__init__(w, l, s, {'here': h})
+        super(SessionMenu, self).__init__(w, l, s, {'here': h})
     # }}}
 
 class HomeMenu(DirtMenu): # {{{
@@ -287,7 +294,7 @@ def wrap(f): # {{{
 
 if __name__ == '__main__': # {{{
     def run_menus(s):
-        m = EnvMenu(s)
+        m = SessionMenu(s)
         while isinstance(m, Menu): m = m.run()
         return m.s.replace(' +','')
     p = wrap(run_menus)
