@@ -21,7 +21,7 @@ alias d='eval $(dirt 2>&1 1>/dev/tty)'
 """
 # }}}
 
-import sys,os,curses as C,os.path, re
+import sys,os,curses as C,os.path, re, pwd
 
 from os import listdir, environ as Env, getcwd as cwd
 from os.path import isdir, normpath, expanduser, join as J
@@ -45,7 +45,7 @@ class Subber(object): # {{{
         self.subs = [ x for x in s if x[0] ]
         self.active = True
     def add(self, pat, repl):
-        pat = self.comp(pat)
+        pat = self._comp(pat)
         if pat: self.subs.append( (pat,repl) )
     def __call__(self, q):
         for pat,repl in self.subs: q = pat.sub(repl, q)
@@ -55,12 +55,13 @@ class Subber(object): # {{{
 class DirName(object): # {{{
     subs = Subber()
     cache = {}
+    homes = dict([(x[0],x[5]) for x in pwd.getpwall() if x[6] !='/bin/false'])
     def norm(cls, p):
-        return normpath(expanduser((p or cwd()).replace(' +','')))
+        return normpath(expanduser(p or cwd()))
     norm = classmethod(norm)
     def fetch(cls, p):
         if isinstance(p, DirName): return p
-        if p and p[:3] == '../': p = cls.norm(cwd()+'/../')
+        if p and p[:3] == '../': p = cls.norm(J(cwd()+p))
         else:                    p = cls.norm(p)
         x = cls.cache.get(p)
         if x: return x
@@ -68,9 +69,12 @@ class DirName(object): # {{{
         cls.cache[x.p] = x
         return x
     fetch = classmethod(fetch)
+    def homedirs(cls):
+        return [ cls.fetch(x) for x in cls.homes ]
+    homedirs = classmethod(homedirs)
     #
     def __init__(self, p=None):
-        self.p = normpath(expanduser(p or cwd()))
+        self.p = self.norm(p)
         self.c = self._has_dir()
         self._examine()
     def _has_dir(self):
@@ -84,7 +88,7 @@ class DirName(object): # {{{
         p = self.p
         if p and p.find(H) == 0:        p = '~'+p[len(H):]
         else:
-            for u,d in HOMES.items():
+            for u,d in self.homes.items():
                 if p.find(d) == 0:      p = J('~'+u, p[len(d):])
         self.s = p
         self.d = self.subs(p) + ['',' +'][self.c]
@@ -141,18 +145,10 @@ class BookmarkFile(object): # {{{
 # {{{ conveniences
 class sym: pass
 
-def read_homes():
-    try:    l = [ x.split(':') for x in file('/etc/passwd') ]
-    except: l = []
-    return dict([ (x[0],x[5]) for x in l
-                  if 999 < int(x[2]) < 1999 or int(x[2]) == 0])
-
 DIRT=sorted([ x for x in Env.get('DIRT','~/').split(':') if x ])
 OLDD=DIRT[:]
 HOME=Env.get('HOME')
-HOMES=read_homes()
 BOOK=BookmarkFile()
-
 # }}}
 
 class Menu(object): # {{{
@@ -288,7 +284,7 @@ class SessionMenu(DirtMenu): # {{{
 class HomeMenu(DirtMenu): # {{{
     def __init__(self, w, h=None):
         h = DirName.fetch(h)
-        l = sorted([ DirName('~'+x) for x in HOMES.keys() ])
+        l = DirName.homedirs()
         s = (h in l and l.index(h) or len(l)/2)
         super(HomeMenu, self).__init__(w, l, s, {'here': h})
     # }}}
