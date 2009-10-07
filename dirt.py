@@ -118,8 +118,8 @@ class BookmarkFile(object): # {{{
     def __init__(self):
         try:    self.l = sorted([ DirName.fetch(l.strip())
                                   for l in file(expanduser('~/.dirt_bm')) ]
-                                or ['~'])
-        except: self.l = ['~']
+                                or [DirName.fetch('~')])
+        except: self.l = [DirName.fetch('~')]
         self.c = False
     def __del__(self):
         """Save if changed."""
@@ -234,6 +234,7 @@ class DirtMenu(Menu): # {{{
             ord('h'):    lambda o: TreeMenu(o.w, '~'),
             ord('q'):    Menu._done,
             ord('r'):    _subs,
+            ord('x'):    lambda o: o._del(),
             ord('~'):    lambda o: HomeMenu(o.w, o.x['here']),
             }.items())
     # }}}
@@ -291,7 +292,7 @@ class HomeMenu(DirtMenu): # {{{
 
 class BookmarkMenu(DirtMenu): # {{{
     def _del(o):
-        BOOK.remove(o.l[o.s].s)
+        BOOK.remove(o.l[o.s])
         Menu._del(o)
     def __init__(self, w, h=None):
         h = DirName.fetch(h or cwd())
