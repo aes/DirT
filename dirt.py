@@ -116,10 +116,11 @@ class BookmarkFile(object): # {{{
     Remember to make sure objects are explicitly destructed.
     """
     def __init__(self):
-        try:    self.l = sorted([ DirName.fetch(l.strip())
-                                  for l in file(expanduser('~/.dirt_bm')) ]
-                                or [DirName.fetch('~')])
+        try:    self.l = ([ DirName.fetch(l.strip())
+                           for l in file(expanduser('~/.dirt_bm')) ]
+                          or [DirName.fetch('~')])
         except: self.l = [DirName.fetch('~')]
+        self.l.sort()
         self.c = False
     def __del__(self):
         """Save if changed."""
@@ -134,7 +135,8 @@ class BookmarkFile(object): # {{{
             pass
     def append(self, d):
         d = DirName.fetch(d)
-        if d not in self.l: self.c, self.l = True, sorted(self.l+[d])
+        if d not in self.l: self.c, self.l = True, self.l+[d]
+        self.l.sort()
     def remove(self, d):
         d = DirName.fetch(d)
         if d in self.l: self.c, self.l = True, [x for x in self.l if x != d]
@@ -145,10 +147,11 @@ class BookmarkFile(object): # {{{
 # {{{ conveniences
 class sym: pass
 
-DIRT=sorted([ x for x in Env.get('DIRT','~/').split(':') if x ])
+DIRT=[ x for x in Env.get('DIRT','~/').split(':') if x ]
 OLDD=DIRT[:]
 HOME=Env.get('HOME')
 BOOK=BookmarkFile()
+DIRT.sort()
 # }}}
 
 class Menu(object): # {{{
@@ -249,13 +252,14 @@ class TreeMenu(DirtMenu): # {{{
             }.items())
     def mklist(self, p):
         p = DirName.fetch(p)
-        l = sorted([ DirName.fetch(p+x)
-                     for x in listdir(p.p)
-                     if isdir(p+x) and (self.dots or x[0] != '.') ])
+        l = [ DirName.fetch(p+x)
+              for x in listdir(p.p)
+              if isdir(p+x) and (self.dots or x[0] != '.') ]
         if not l:
             if not p.is_root(): return self.mklist(p+'/../')
             else:               return [DirName.fetch('/')]
         else:
+            l.sort()
             return l
     def __init__(self, w, p=None, h=None):
         self.dots = False
@@ -277,8 +281,9 @@ class SessionMenu(DirtMenu): # {{{
             }.items())
     def __init__(self, w, h=None):
         h = DirName.fetch(h)
-        l = sorted([ DirName.fetch(x) for x in DIRT ])
+        l = [ DirName.fetch(x) for x in DIRT ]
         s = (h in l and l.index(h) or len(l)/2)
+        l.sort()
         super(SessionMenu, self).__init__(w, l, s, {'here': h})
     # }}}
 
@@ -296,8 +301,9 @@ class BookmarkMenu(DirtMenu): # {{{
         Menu._del(o)
     def __init__(self, w, h=None):
         h = DirName.fetch(h or cwd())
-        l = sorted([ DirName.fetch(x) for x in BOOK ])
+        l = [ DirName.fetch(x) for x in BOOK ]
         s = (h in l and l.index(h) or len(l)/2)
+        l.sort()
         super(BookmarkMenu, self).__init__(w, l, s, {'here': h})
     # }}}
 
