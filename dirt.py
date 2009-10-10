@@ -30,6 +30,19 @@ def u8(s):
     if not isinstance(s, unicode): s = unicode(s, 'utf-8', 'replace')
     return s.encode('utf-8')
 
+def levenshtein(a,b): # {{{
+    "Calculates the Levenshtein distance between a and b."
+    n, m = len(a), len(b)
+    if n > m: a,b, n,m = b,a, m,n
+    cur = range(n+1)
+    for i in range(1,m+1):
+        prev, cur = cur, [i]+[0]*n
+        for j in range(1,n+1):
+            add,rem,chg = prev[j]+1, cur[j-1]+1, prev[j-1]+int(a[j-1]!=b[i-1])
+            cur[j] = min(add, rem, chg)
+    return cur[n]
+    # }}}
+
 class Subber(object): # {{{
     cfg_re = re.compile('^([^\t]*)\t+(.*)$')
     def _comp(cls, p):
@@ -165,6 +178,7 @@ class Menu(object): # {{{
     def _last(o):     o.s = len(o.l) - 1
     def _del(o):      o.l, o.s = o.l[:o.s]+o.l[o.s+1:], min(len(o.l) - 2, o.s)
     def _done(o, *a): raise StopIteration, a
+    def _srch(o):     return InteractiveMenu(o)
     m = { C.KEY_UP:     _prev,
           C.KEY_DOWN:   _next,
           C.KEY_PPAGE:  _pgup,
@@ -173,16 +187,20 @@ class Menu(object): # {{{
           C.KEY_END:    _last,
           ord("\n"):    lambda o: o.l[o.s],
           ord("\r"):    lambda o: o.l[o.s],
+          ord('/'):     _srch,
+          ord('_'):     _srch,
           ord('q'):     _done,
           27:           _done,
     }
     def __init__(self, w, l, s=0, extra={}):
         self.w, self.l, self.s, self.x, self._z = w, l, s, extra, None
+        self.t = getattr(self, 't', self.__class__.__name__.replace('Menu',''))
     def _repad(self):
         _z = (len(self.l)+1, max([2]+[len(x)+1 for x in self.l]))
         if self._z != _z:
             self._z = _z
             self._p = C.newpad(*self._z)
+        self._p.clear()
         return self._p
     def draw(self):
         p = self._repad()
@@ -190,9 +208,8 @@ class Menu(object): # {{{
         y, x = w.getmaxyx()
         if y < 2 or x < 4: raise RuntimeError
         #
-        n = self.__class__.__name__.replace('Menu','')
         w.clear()
-        w.addstr(0, 1, n, C.A_BOLD)
+        w.addstr(0, 1, self.t, C.A_BOLD)
         #
         for i in range(len(l)): p.addstr(i, 0, u8(l[i].d), cc[i==s])
         #
@@ -202,15 +219,44 @@ class Menu(object): # {{{
         p.overlay(w, q,0, 1,1, min(y-1, z[0]-1-q), min(x-1, z[1]-1))
         #
         w.refresh()
+    def input(self, c): return self.m.get(c)
     def run(self):
         while True:
             self.draw()
             try:                      c = self.w.getch()
             except KeyboardInterrupt: c = 27
-            f = self.m.get(c)
+            f = self.input(c)
             if callable(f):
                 c = f(self)
                 if c: return c != Menu.QUIT and c or None
+    # }}}
+
+class InteractiveMenu(Menu): # {{{
+    def _bs(o):
+        if not o.q: return o.ctx
+        o.q = o.q[:-1]
+        o.redo()
+    m = dict(Menu.m.items() + {
+            C.KEY_BACKSPACE: _bs,
+            27:              lambda o: o.ctx,
+        }.items())
+    def __init__(self, ctx):
+        self.ctx, self.q = ctx, ''
+        super(InteractiveMenu, self).__init__(ctx.w, ctx.l[:])
+    def redo(self):
+        q = self.q
+        m = [ (levenshtein(q, y.s)-len(y.s), y) for y in self.l ]
+        m.sort()
+        l = []
+        for i, x in enumerate(m):
+            if i % 2:  l = [x]+l
+            else:      l = l+[x]
+        self.t = '/'+self.q+' '
+        self.s, self.l = len(l)/2, [ y for x, y in l ]
+    def input(self, c):
+        if not (31 < c < 127): return self.m.get(c) or self.ctx.input(c)
+        self.q += chr(c)
+        self.redo()
     # }}}
 
 class DirtMenu(Menu): # {{{
