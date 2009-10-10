@@ -148,10 +148,9 @@ class BookmarkFile(object): # {{{
 class sym: pass
 
 DIRT=[ x for x in Env.get('DIRT','~/').split(':') if x ]
-OLDD=DIRT[:]
-HOME=Env.get('HOME')
-BOOK=BookmarkFile()
 DIRT.sort()
+BOOK=BookmarkFile()
+OLDD=DIRT[:]
 # }}}
 
 class Menu(object): # {{{
