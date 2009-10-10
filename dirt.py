@@ -43,6 +43,11 @@ def levenshtein(a,b): # {{{
     return cur[n]
     # }}}
 
+def dist(a, b):
+    d = levenshtein(a, b) - len(b)
+    if a in b:  d -= len(a) + b.find(a) / len(b)
+    return d
+
 class Subber(object): # {{{
     cfg_re = re.compile('^([^\t]*)\t+(.*)$')
     def _comp(cls, p):
@@ -245,7 +250,7 @@ class InteractiveMenu(Menu): # {{{
         super(InteractiveMenu, self).__init__(ctx.w, ctx.l[:])
     def redo(self):
         q = self.q
-        m = [ (levenshtein(q, y.s)-len(y.s), y) for y in self.l ]
+        m = [ (dist(q, y.s), y) for y in self.l ]
         m.sort()
         l = []
         for i, x in enumerate(m):
@@ -262,7 +267,6 @@ class InteractiveMenu(Menu): # {{{
 class DirtMenu(Menu): # {{{
     _desc = lambda o: o.l[o.s].c and TreeMenu(o.w, o.l[o.s])
     _ascd = lambda o: TreeMenu(o.w, o.l[o.s].s+'/../../', o.x['here'])
-    _tree = lambda o: TreeMenu(o.w)
     def _subs(o):
         DirName.subs.active = not DirName.subs.active
     def _book(o):
@@ -278,8 +282,8 @@ class DirtMenu(Menu): # {{{
             ord('S'):    _save,
             ord('b'):    lambda o: BookmarkMenu(o.w),
             ord('s'):    lambda o: SessionMenu(o.w),
-            ord('d'):    _tree,
-            ord('h'):    lambda o: TreeMenu(o.w, '~'),
+            ord('d'):    lambda o: TreeMenu(o.w, cwd(), o.x['here']),
+            ord('h'):    lambda o: TreeMenu(o.w, '~', o.x['here']),
             ord('q'):    Menu._done,
             ord('r'):    _subs,
             ord('x'):    lambda o: o._del(),

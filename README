@@ -23,7 +23,7 @@ Anders Eurenius <aes@nerdshack.com>
 
  Up / Down:	Browse
  Enter:		Exit and cd to this directory
- q:		Quit, without doing 'cd'.
+ Escape, q:	Quit, without doing 'cd'.
 
  Right		Tree-browse directory
  Left		Tree-browse parent directory
@@ -39,6 +39,21 @@ Anders Eurenius <aes@nerdshack.com>
  d		Tree browse from current dir
 
  x		Remove entry (from Session / Bookmarks)
+
+ /, _		Enter interactive search
+
+## In interactive search mode:
+ Escape		Exit interactive search mode
+ Backspace	Remove last search string char, or exit mode if empty
+ ' '..'~'	Add to search string
+
+# Interactive search mode
+
+After you've entered IS, just type a few characters. As you type each char,
+the display list is re-sorted to place the best matches in the middle and
+highlights the middle. IS also shows the current string at the top of the
+screen. Placing best matches in the middle halves is done so that the browse
+distance to an entry is halved.
 
 # (Display) Substition File
 
