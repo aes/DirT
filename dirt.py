@@ -76,7 +76,7 @@ class DirName(object): # {{{
         return x
     fetch = classmethod(fetch)
     def homedirs(cls):
-        return [ cls.fetch(x) for x in cls.homes ]
+        return [ cls.fetch('~'+x) for x in cls.homes ]
     homedirs = classmethod(homedirs)
     #
     def __init__(self, p=None):
