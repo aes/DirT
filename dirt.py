@@ -32,6 +32,7 @@ def levenshtein(a,b): # {{{
     # }}}
 
 def dist(a, b):
+    a, b = a.lower(), b.lower()
     d = levenshtein(a, b) - len(b)
     if a in b:  d -= len(a) + b.find(a) / len(b)
     return d
