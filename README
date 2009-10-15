@@ -1,11 +1,7 @@
 
 LICENCE
 
-I am quite unimpressed by the whole 'occupation of the world of ideas by
-grants of arbitrary privilege by government fiat' concept. I am not going to
-read a dozen free licences just to pick one. Instead, I'd like, if at all
-possible, to circumnavigate the whole war: For now, it's GPLv2. If you know
-what that means, good for you, enjoy.
+For now, it's GPLv2. If you know what that means, good for you, enjoy.
 
 If not, well, you can...
  * contact me to negotiate a different licence, or
@@ -62,7 +58,7 @@ can enter substitution patterns in a file called ~/.dirt_subs. In the subs
 file patterns and replacements are listed, one per line separated by one or
 more tabs:
 
-pattern (one or more tabs) replacement
+  pattern (one or more tabs) replacement
 
 Lines that don't follow this pattern are ignored. If you need the pattern to
 include tabs, you can use \t. Replacements can also include \1 or \g<foo> as
