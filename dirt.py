@@ -377,8 +377,15 @@ def wrap(f): # {{{
     # }}}
 
 if __name__ == '__main__': # {{{
-    def run_menus(s):
-        m = SessionMenu(s)
+    x = len(sys.argv) > 1 and sys.argv[1] or None
+    if   x == '-b': Begin, x = BookmarkMenu, None
+    elif x == '-t': Begin, x = TreeMenu,     None
+    elif x == '-s': Begin, x = SessionMenu,  None
+    elif x == '-h': Begin, x = HomeMenu,     None
+    elif x:         Begin, x = TreeMenu,     isdir(x) and x or None
+    else:           Begin, x = SessionMenu,  None
+    def run_menus(w):
+        m = Begin(w, x)
         while isinstance(m, Menu): m = m.run()
         return m.s.replace(' +','')
     p = wrap(run_menus)
