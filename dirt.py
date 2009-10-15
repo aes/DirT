@@ -5,19 +5,7 @@ dirt is an interactive curses user interface for changing directory in shells.
 
 It's nice, but there are a lot things that need to be done.
 
-Put this in your .bashrc :
-
-function pcmd()
-{
-  DIRT=$( echo ${DIRT}:${PWD} |\
-          tr : "\n" |\
-          sed "s@^${HOME}@\~@" |\
-          sort -u |\
-          tr "\n" : )
-}
-export DIRT=""
-PROMPT_COMMAND=pcmd
-alias d='eval $(dirt 2>&1 1>/dev/tty)'
+Put the contents of dirt.sh in your .bashrc, or just source it.
 """
 # }}}
 
