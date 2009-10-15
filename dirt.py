@@ -231,6 +231,7 @@ class InteractiveMenu(Menu): # {{{
         o.redo()
     m = dict(Menu.m.items() + {
             C.KEY_BACKSPACE: _bs,
+            C.KEY_LEFT:      lambda o: o.ctx,
             27:              lambda o: o.ctx,
         }.items())
     def __init__(self, ctx):
