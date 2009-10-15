@@ -356,14 +356,13 @@ def wrap(f): # {{{
         stdscr.keypad(1)
         C.curs_set(0)
 
-        return f(stdscr)
+        ret = f(stdscr)
 
-        C.curs_set(1);
-        stdscr.refresh()
-    except StopIteration:
-        return None
-    finally:
-        C.nocbreak(); stdscr.keypad(0); C.echo(); C.endwin()
+    except Exception:
+        ret = None
+
+    C.curs_set(1); C.nocbreak(); stdscr.keypad(0); C.echo(); C.endwin()
+    return ret
     # }}}
 
 if __name__ == '__main__': # {{{
