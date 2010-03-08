@@ -376,9 +376,9 @@ if __name__ == '__main__': # {{{
     def run_menus(w):
         m = Begin(w, x)
         while isinstance(m, Menu): m = m.run()
-        return m.s.replace(' +','')
+        return repr(m.s)[1:-1]
     p = wrap(run_menus)
     if OLDD != DIRT:     print >>sys.stderr, 'DIRT=' + ':'.join(DIRT), ';',
-    if p and p != cwd(): print >>sys.stderr, 'cd ' + p, ';'
+    if p and p != cwd(): print >>sys.stderr, 'cd ' + p + ';'
     BOOK.save()
     # }}}
