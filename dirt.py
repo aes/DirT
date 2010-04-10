@@ -293,11 +293,11 @@ class TreeMenu(DirtMenu): # {{{
             }.items())
     def mklist(self, p):
         p = DirName.fetch(p)
-        l = [ DirName.fetch(p+x)
+        l = [ DirName.fetch(J(p.p, x))
               for x in listdir(p.p)
-              if isdir(p+x) and (self.dots or x[0] != '.') ]
+              if isdir(J(p.p, x)) and (self.dots or x[0] != '.') ]
         if not l:
-            if not p.is_root(): return self.mklist(p+'/../')
+            if not p.is_root(): return self.mklist(J(p.p, '../'))
             else:               return [DirName.fetch('/')]
         else:
             l.sort()
