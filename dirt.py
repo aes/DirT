@@ -122,9 +122,9 @@ class BookmarkFile(object): # {{{
 
     Remember to make sure objects are explicitly destructed.
     """
-    def __init__(self):
+    def __init__(self, fn='~/.dirt_bm'):
         try:    self.l = ([ DirName.fetch(l.strip())
-                           for l in file(expanduser('~/.dirt_bm')) ]
+                           for l in file(expanduser(fn)) ]
                           or [DirName.fetch('~')])
         except: self.l = [DirName.fetch('~')]
         self.l.sort()
@@ -157,6 +157,7 @@ class sym: pass
 DIRT=[ x for x in Env.get('DIRT','~/').split(':') if x ]
 DIRT.sort()
 BOOK=BookmarkFile()
+SHAR=BookmarkFile(Env.get('DIRT_SHARED','/dev/null'))
 OLDD=DIRT[:]
 # }}}
 
@@ -277,6 +278,7 @@ class DirtMenu(Menu): # {{{
             ord('q'):    Menu._done,
             ord('r'):    _subs,
             ord('x'):    lambda o: o._del(),
+            ord('z'):    lambda o: SharedMenu(o.w),
             ord('~'):    lambda o: HomeMenu(o.w, o.x['here']),
             }.items())
     # }}}
@@ -335,15 +337,20 @@ class HomeMenu(DirtMenu): # {{{
     # }}}
 
 class BookmarkMenu(DirtMenu): # {{{
+    it = BOOK
     def _del(o):
-        BOOK.remove(o.l[o.s])
+        self.it.remove(o.l[o.s])
         Menu._del(o)
     def __init__(self, w, h=None):
         h = DirName.fetch(h or cwd())
-        l = [ DirName.fetch(x) for x in BOOK ]
+        l = [ DirName.fetch(x) for x in self.it ]
         s = (h in l and l.index(h) or len(l)/2)
         l.sort()
         super(BookmarkMenu, self).__init__(w, l, s, {'here': h})
+    # }}}
+
+class SharedMenu(BookmarkMenu): # {{{
+    it = SHAR
     # }}}
 
 def wrap(f): # {{{
@@ -370,6 +377,7 @@ if __name__ == '__main__': # {{{
     if   x == '-b': Begin, x = BookmarkMenu, None
     elif x == '-t': Begin, x = TreeMenu,     None
     elif x == '-s': Begin, x = SessionMenu,  None
+    elif x == '-z': Begin, x = SharedMenu,   None
     elif x == '-h': Begin, x = HomeMenu,     None
     elif x:         Begin, x = TreeMenu,     isdir(x) and x or None
     else:           Begin, x = SessionMenu,  None
