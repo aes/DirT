@@ -147,6 +147,7 @@ class BookmarkFile(object): # {{{
     def remove(self, d):
         d = DirName.fetch(d)
         if d in self.l: self.c, self.l = True, [x for x in self.l if x != d]
+        self.save()
     def __contains__(self, d): return DirName.fetch(d) in self.l
     def __iter__(self):        return self.l.__iter__()
     # }}}
@@ -339,7 +340,7 @@ class HomeMenu(DirtMenu): # {{{
 class BookmarkMenu(DirtMenu): # {{{
     it = BOOK
     def _del(o):
-        self.it.remove(o.l[o.s])
+        o.it.remove(o.l[o.s])
         Menu._del(o)
     def __init__(self, w, h=None):
         h = DirName.fetch(h or cwd())
