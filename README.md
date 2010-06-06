@@ -20,36 +20,36 @@ Planned features:
 
 ## Keys:
 
-| Key        | Effect                                                     |
-| ---------- | ---------------------------------------------------------- |
-| Up / Down  | Browse							  |
-| Enter      | Exit and cd to this directory				  |
-| Escape, q  | Quit, without doing 'cd'.				  |
-|            |								  |
-| Right      | Tree-browse directory					  |
-| Left       | Tree-browse parent directory				  |
-|            |								  |
-| b          | Browse bookmarks						  |
-| B          | Bookmark highlighted entry				  |
-|            |								  |
-| s          | Browse session (dirs visited in session)			  |
-| S          | Save highlighted entry in session			  |
-|            |								  |
-| ~          | Homes browser						  |
-| h          | Tree browse from home					  |
-| d          | Tree browse from current dir				  |
-|            |								  |
-| x          | Remove entry (from Session / Bookmarks)			  |
-|            |								  |
-| /, _       | Enter interactive search					  |
+| Key        | Effect
+| ---------- | ----------------------------------------------------------
+| Up / Down  | Browse
+| Enter      | Exit and cd to this directory
+| Escape, q  | Quit, without doing 'cd'.
+|            |
+| Right      | Tree-browse directory
+| Left       | Tree-browse parent directory
+|            |
+| b          | Browse bookmarks
+| B          | Bookmark highlighted entry
+|            |
+| s          | Browse session (dirs visited in session)
+| S          | Save highlighted entry in session
+|            |
+| ~          | Homes browser
+| h          | Tree browse from home
+| d          | Tree browse from current dir
+|            |
+| x          | Remove entry (from Session / Bookmarks)
+|            |
+| /, _       | Enter interactive search
 
 ### In interactive search mode:
 
-| Key         | Effect                                                    |
-| ----------- | --------------------------------------------------------- |
-| Escape      | Exit interactive search mode                              |
-| Backspace   | Remove last search string char, or exit mode if empty     |
-| ' '..'~'    | Add to search string                                      |
+| Key         | Effect
+| ----------- | ---------------------------------------------------------
+| Escape      | Exit interactive search mode
+| Backspace   | Remove last search string char, or exit mode if empty
+| ' '..'~'    | Add to search string
 
 ## Interactive search mode
 
