@@ -14,9 +14,15 @@ import sys,os,curses as C,os.path, re, pwd
 from os import listdir, environ as Env, getcwd as cwd
 from os.path import isdir, normpath, expanduser, join as J
 
+# {{{ utils
 def u8(s):
     if not isinstance(s, unicode): s = unicode(s, 'utf-8', 'replace')
     return s.encode('utf-8')
+
+def shellsafe(s, z=re.compile('[^/0-9A-Za-z,.~=+-]')):
+    if isinstance(s, DirName): s = str(s)
+    if isinstance(s, basestring): return z.sub(lambda mo: '\\'+mo.group(0), s)
+    else:                         return [shellsafe(x) for x in s]
 
 def levenshtein(a,b): # {{{
     "Calculates the Levenshtein distance between a and b."
@@ -36,6 +42,7 @@ def dist(a, b):
     d = levenshtein(a, b) - len(b)
     if a in b:  d -= len(a) + b.find(a) / len(b)
     return d
+#}}}
 
 class Subber(object): # {{{
     cfg_re = re.compile('^([^\t]*)\t+(.*)$')
@@ -387,7 +394,8 @@ if __name__ == '__main__': # {{{
         while isinstance(m, Menu): m = m.run()
         return repr(m.s)[1:-1]
     p = wrap(run_menus)
-    if OLDD != DIRT:     print >>sys.stderr, 'DIRT=' + ':'.join(DIRT), ';',
-    if p and p != cwd(): print >>sys.stderr, 'cd ' + p + ';'
+    E = sys.stderr
     BOOK.save()
+    if OLDD != DIRT:     print >>E, "DIRT=" + ":".join(shellsafe(DIRT)), ";",
+    if p and p != cwd(): print >>E, 'cd "' + str(shellsafe(p)) + '"',
     # }}}
