@@ -107,7 +107,7 @@ class DirName(object): # {{{
     def __cmp__(self, other):
         if isinstance(other,    DirName): return cmp(self.p, other)
         if isinstance(other, basestring): return cmp(self.p, other)
-        raise TypeError, self, other
+        raise TypeError, type(other)
     def __len__(self):        return len(self.d)
     def __add__(self, other):
         if isinstance(other, DirName): return J(self.p, other.p)
