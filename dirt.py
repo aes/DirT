@@ -134,6 +134,7 @@ class BookmarkFile(object): # {{{
                            for l in file(expanduser(fn)) ]
                           or [DirName.fetch('~')])
         except: self.l = [DirName.fetch('~')]
+        self.fn = expanduser(fn)
         self.l.sort()
         self.c = False
     def __del__(self):
@@ -142,7 +143,7 @@ class BookmarkFile(object): # {{{
     def save(self):
         if not self.c: return
         try:
-            f = file(expanduser('~/.dirt_bm'), 'w')
+            f = file(self.fn, 'w')
             f.write("".join([ d.s+"\n" for d in self.l ]))
             f.close()
         except:
@@ -396,6 +397,7 @@ if __name__ == '__main__': # {{{
     p = wrap(run_menus)
     E = sys.stderr
     BOOK.save()
+    SHAR.save()
     if OLDD != DIRT:     print >>E, "DIRT=" + ":".join(shellsafe(DIRT)), ";",
-    if p and p != cwd(): print >>E, 'cd "' + str(shellsafe(p)) + '"',
+    if p and p != cwd(): print >>E, 'cd ' + str(shellsafe(p)),
     # }}}
