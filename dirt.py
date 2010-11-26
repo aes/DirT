@@ -278,6 +278,7 @@ class DirtMenu(Menu): # {{{
     m = dict(Menu.m.items() + {
             C.KEY_RIGHT: _desc,
             C.KEY_LEFT:  _ascd,
+            C.KEY_DC:    lambda o: o._del(),
             ord('B'):    _book,
             ord('S'):    _save,
             ord('b'):    lambda o: BookmarkMenu(o.w),
