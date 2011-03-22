@@ -140,30 +140,11 @@ class DirName(Homes): # {{{
     def __repr__(self):       return self.p
     # }}}
 
-class BookmarkFile(object): # {{{
-    """Abstraction for bookmark file.
-
-    Remember to make sure objects are explicitly destructed.
-    """
-    def __init__(self, fn='~/.dirt_bm'):
-        try:    self.l = ([ DirName.fetch(l.strip())
-                           for l in file(expanduser(fn)) ]
-                          or [DirName.fetch('~')])
-        except: self.l = [DirName.fetch('~')]
-        self.fn = expanduser(fn)
-        self.l.sort()
+class AbstractList(object): # {{{
+    def __init__(self, *x):
         self.c = False
-    def __del__(self):
-        """Save if changed."""
-        self.save()
-    def save(self):
-        if not self.c: return
-        try:
-            f = file(self.fn, 'w')
-            f.write("".join([ d.s+"\n" for d in self.l ]))
-            f.close()
-        except:
-            pass
+        self.load(*x)
+        self.l.sort()
     def append(self, d):
         d = DirName.fetch(d)
         if d not in self.l: self.c, self.l = True, self.l+[d]
@@ -171,19 +152,44 @@ class BookmarkFile(object): # {{{
     def remove(self, d):
         d = DirName.fetch(d)
         if d in self.l: self.c, self.l = True, [x for x in self.l if x != d]
-        self.save()
     def __contains__(self, d): return DirName.fetch(d) in self.l
     def __iter__(self):        return self.l.__iter__()
+    # }}}
+
+class BookmarkFile(AbstractList): # {{{
+    """Abstraction for bookmark file.
+
+    Remember to make sure objects are explicitly destructed.
+    """
+    def load(self, fn='~/.dirt_bm'):
+        try:    self.l = ([ DirName.fetch(l.strip())
+                           for l in file(expanduser(fn)) ]
+                          or [DirName.fetch('~')])
+        except: self.l = [DirName.fetch('~')]
+        self.fn = expanduser(fn)
+    def save(self):
+        if not self.c: return
+        try:
+            f = file(self.fn, 'w')
+            f.write("".join([ d.s+"\n" for d in self.l ]))
+            f.close()
+        except: pass
+    # }}}
+
+class EnvList(AbstractList): # {{{
+    def load(self):
+        df = DirName.fetch
+        self.l = [ df(x) for x in Env.get('DIRT','~/').split(':') if x ]
+    def save(self):
+        if self.c: print >>E, "DIRT="+":".join(map(lambda x: x.p, self.l)),";",
     # }}}
 
 # {{{ conveniences
 class sym: pass
 
-DIRT=[ x for x in Env.get('DIRT','~/').split(':') if x ]
-DIRT.sort()
+DIRT=EnvList()
 BOOK=BookmarkFile()
 SHAR=BookmarkFile(Env.get('DIRT_SHARED','/dev/null'))
-OLDD=DIRT[:]
 # }}}
 
 class Menu(object): # {{{
@@ -338,17 +344,13 @@ class TreeMenu(DirtMenu): # {{{
     # }}}
 
 class SessionMenu(DirtMenu): # {{{
-    _ascd = lambda o: TreeMenu(o.w, o.l[o.s].s+'/../', o.x['here'])
+    it = DIRT
     def _del(o):
         DIRT.remove(o.l[o.s].s)
         Menu._del(o)
-    m = dict(DirtMenu.m.items() + {
-            C.KEY_LEFT:  _ascd,
-            ord('x'):    _del,
-            }.items())
     def __init__(self, w, h=None):
-        h = DirName.fetch(h)
-        l = [ DirName.fetch(x) for x in DIRT ]
+        h = DirName.fetch(h or cwd())
+        l = [ DirName.fetch(x) for x in self.it ]
         s = (h in l and l.index(h) or len(l)/2)
         l.sort()
         super(SessionMenu, self).__init__(w, l, s, {'here': h})
@@ -415,6 +417,6 @@ if __name__ == '__main__': # {{{
     E = sys.stderr
     BOOK.save()
     SHAR.save()
-    if OLDD != DIRT:     print >>E, "DIRT=" + ":".join(shellsafe(DIRT)), ";",
+    DIRT.save()
     if p and p != cwd(): print >>E, 'cd ' + str(shellsafe(p)),
     # }}}
