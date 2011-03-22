@@ -66,16 +66,40 @@ class Subber(object): # {{{
         return q
     # }}}
 
-class DirName(object): # {{{
+class Homes(object): # {{{
+    _userhome  = Env.get('HOME')
+    _homecache = None
+    _homesdict = {}
+    def homes(cls):
+        if not cls._homesdict:
+            s = [x.strip() for x in file('/etc/shells') if x and x[0]=='/']
+            h = dict([(x[0],x[5]) for x in pwd.getpwall() if x[6] in s])
+            cls._homesdict = h
+        return cls._homesdict
+    homes = classmethod(homes)
+    def homedirs(cls):
+        if not cls._homecache:
+            cls._homecache = [ cls.fetch('~'+x) for x in cls.homes() ]
+        return cls._homecache
+    homedirs = classmethod(homedirs)
+    def normhome(cls, p=None):
+        if not p: return p
+        if p.find(cls._userhome) == 0:  return '~'+p[len(cls._userhome):]
+        for u,d in cls.homes().items():
+            if p.find(d) == 0:          return J('~'+u, p[len(d):])
+        return p
+    # }}}
+
+
+class DirName(Homes): # {{{
     subs = Subber()
     cache = {}
-    homes = dict([(x[0],x[5]) for x in pwd.getpwall() if x[6] !='/bin/false'])
     def norm(cls, p):
         return normpath(expanduser(p or cwd()))
     norm = classmethod(norm)
     def fetch(cls, p):
         if isinstance(p, DirName): return p
-        if p and p[:3] == '../': p = cls.norm(J(cwd()+p))
+        if p and p[:3] == '../': p = cls.norm(J(cwd(), p))
         else:                    p = cls.norm(p)
         x = cls.cache.get(p)
         if x: return x
@@ -83,10 +107,6 @@ class DirName(object): # {{{
         cls.cache[x.p] = x
         return x
     fetch = classmethod(fetch)
-    def homedirs(cls):
-        return [ cls.fetch('~'+x) for x in cls.homes ]
-    homedirs = classmethod(homedirs)
-    #
     def __init__(self, p=None):
         self.p = self.norm(p)
         self.c = self._has_dir()
@@ -98,12 +118,8 @@ class DirName(object): # {{{
             if isdir(u8(self.p+'/'+n)):
                 return True
         return False
-    def _examine(self, H=Env.get('HOME')):
-        p = self.p
-        if p and p.find(H) == 0:        p = '~'+p[len(H):]
-        else:
-            for u,d in self.homes.items():
-                if p.find(d) == 0:      p = J('~'+u, p[len(d):])
+    def _examine(self):
+        p = self.normhome(self.p)
         self.s = p
         self.d = self.subs(p) + ['',' +'][self.c]
         return p or './'
