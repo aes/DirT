@@ -66,7 +66,23 @@ class Subber(object): # {{{
         return q
     # }}}
 
-class Homes(object): # {{{
+class AbstractList(object): # {{{
+    def __init__(self, *x):
+        self.c = False
+        self.load(*x)
+        self.l.sort()
+    def append(self, d):
+        d = DirName.fetch(d)
+        if d not in self.l: self.c, self.l = True, self.l+[d]
+        self.l.sort()
+    def remove(self, d):
+        d = DirName.fetch(d)
+        if d in self.l: self.c, self.l = True, [x for x in self.l if x != d]
+    def __contains__(self, d): return DirName.fetch(d) in self.l
+    def __iter__(self):        return self.l.__iter__()
+    # }}}
+
+class Homes(AbstractList): # {{{
     _userhome  = Env.get('HOME')
     _homecache = None
     _homesdict = {}
@@ -79,7 +95,7 @@ class Homes(object): # {{{
     homes = classmethod(homes)
     def homedirs(cls):
         if not cls._homecache:
-            cls._homecache = [ cls.fetch('~'+x) for x in cls.homes() ]
+            cls._homecache = [ DirName.fetch('~'+x) for x in cls.homes() ]
         return cls._homecache
     homedirs = classmethod(homedirs)
     def normhome(cls, p=None):
@@ -88,8 +104,12 @@ class Homes(object): # {{{
         for u,d in cls.homes().items():
             if p.find(d) == 0:          return J('~'+u, p[len(d):])
         return p
+    def load(self):
+        self.l = self.homedirs()
+    def save(self, *al, **kw): pass
+    append = save
+    remove = save
     # }}}
-
 
 class DirName(Homes): # {{{
     subs = Subber()
@@ -138,22 +158,6 @@ class DirName(Homes): # {{{
     def __str__(self):        return self.d
     def __unicode__(self):    return self.d
     def __repr__(self):       return self.p
-    # }}}
-
-class AbstractList(object): # {{{
-    def __init__(self, *x):
-        self.c = False
-        self.load(*x)
-        self.l.sort()
-    def append(self, d):
-        d = DirName.fetch(d)
-        if d not in self.l: self.c, self.l = True, self.l+[d]
-        self.l.sort()
-    def remove(self, d):
-        d = DirName.fetch(d)
-        if d in self.l: self.c, self.l = True, [x for x in self.l if x != d]
-    def __contains__(self, d): return DirName.fetch(d) in self.l
-    def __iter__(self):        return self.l.__iter__()
     # }}}
 
 class BookmarkFile(AbstractList): # {{{
@@ -343,41 +347,31 @@ class TreeMenu(DirtMenu): # {{{
         super(TreeMenu, self).__init__(w, l, s, {'here': p})
     # }}}
 
-class SessionMenu(DirtMenu): # {{{
+class ListMenu(DirtMenu): # {{{
     it = DIRT
     def _del(o):
-        DIRT.remove(o.l[o.s].s)
+        o.it.remove(o.l[o.s].s)
         Menu._del(o)
     def __init__(self, w, h=None):
         h = DirName.fetch(h or cwd())
         l = [ DirName.fetch(x) for x in self.it ]
         s = (h in l and l.index(h) or len(l)/2)
         l.sort()
-        super(SessionMenu, self).__init__(w, l, s, {'here': h})
+        super(ListMenu, self).__init__(w, l, s, {'here': h})
+
+class SessionMenu(ListMenu): # {{{
+    it = DIRT
     # }}}
 
-class HomeMenu(DirtMenu): # {{{
-    def __init__(self, w, h=None):
-        h = DirName.fetch(h)
-        l = DirName.homedirs()
-        s = (h in l and l.index(h) or len(l)/2)
-        super(HomeMenu, self).__init__(w, l, s, {'here': h})
+class HomeMenu(ListMenu): # {{{
+    it = Homes()
     # }}}
 
-class BookmarkMenu(DirtMenu): # {{{
+class BookmarkMenu(SessionMenu): # {{{
     it = BOOK
-    def _del(o):
-        o.it.remove(o.l[o.s])
-        Menu._del(o)
-    def __init__(self, w, h=None):
-        h = DirName.fetch(h or cwd())
-        l = [ DirName.fetch(x) for x in self.it ]
-        s = (h in l and l.index(h) or len(l)/2)
-        l.sort()
-        super(BookmarkMenu, self).__init__(w, l, s, {'here': h})
     # }}}
 
-class SharedMenu(BookmarkMenu): # {{{
+class SharedMenu(SessionMenu): # {{{
     it = SHAR
     # }}}
 
