@@ -389,8 +389,9 @@ def wrap(f): # {{{
 
     except Exception, e:
         ret = None
-        C.curs_set(1); C.nocbreak(); stdscr.keypad(0); C.echo(); C.endwin()
-        raise
+        if not isinstance(e, StopIteration):
+            C.curs_set(1); C.nocbreak(); stdscr.keypad(0); C.echo(); C.endwin()
+            raise
 
     C.curs_set(1); C.nocbreak(); stdscr.keypad(0); C.echo(); C.endwin()
     return ret
