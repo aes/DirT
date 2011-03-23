@@ -412,8 +412,6 @@ if __name__ == '__main__': # {{{
         return repr(m.s)[1:-1]
     p = wrap(run_menus)
     E = sys.stderr
-    BOOK.save()
-    SHAR.save()
-    DIRT.save()
+    for x in (BOOK, SHAR, DIRT): x.save()
     if p and p != cwd(): print >>E, 'cd ' + str(shellsafe(p)),
     # }}}
