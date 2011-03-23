@@ -69,17 +69,26 @@ class Subber(object): # {{{
 class AbstractList(object): # {{{
     def __init__(self, *x):
         self.c = False
-        self.load(*x)
+        self.l = None
+        self.z = x
+    def lazy(self):
+        self.load(*self.z)
         self.l.sort()
     def append(self, d):
+        if not self.l: self.lazy()
         d = DirName.fetch(d)
         if d not in self.l: self.c, self.l = True, self.l+[d]
         self.l.sort()
     def remove(self, d):
+        if not self.l: self.lazy()
         d = DirName.fetch(d)
         if d in self.l: self.c, self.l = True, [x for x in self.l if x != d]
-    def __contains__(self, d): return DirName.fetch(d) in self.l
-    def __iter__(self):        return self.l.__iter__()
+    def __contains__(self, d):
+        if not self.l: self.lazy()
+        return DirName.fetch(d) in self.l
+    def __iter__(self):
+        if not self.l: self.lazy()
+        return self.l.__iter__()
     # }}}
 
 class Homes(AbstractList): # {{{
