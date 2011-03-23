@@ -92,7 +92,7 @@ class AbstractList(object): # {{{
     # }}}
 
 class Homes(AbstractList): # {{{
-    _userhome  = Env.get('HOME')
+    _userhome  = normpath(expanduser('~'))
     _homecache = None
     _homesdict = {}
     def homes(cls):
@@ -109,9 +109,10 @@ class Homes(AbstractList): # {{{
     homedirs = classmethod(homedirs)
     def normhome(cls, p=None):
         if not p: return p
+        p = normpath(expanduser(p))
         if p.find(cls._userhome) == 0:  return '~'+p[len(cls._userhome):]
         for u,d in cls.homes().items():
-            if p.find(d) == 0:          return J('~'+u, p[len(d):])
+            if p.find(d) == 0:          return '~'+u+p[len(d):]
         return p
     def load(self):
         self.l = self.homedirs()
@@ -153,7 +154,7 @@ class DirName(Homes): # {{{
         self.d = self.subs(p) + ['',' +'][self.c]
         return p or './'
     #
-    def parent(self):         return normpath(J, '..')
+    def parent(self):         return normpath(J(self.p, '..'))
     def is_root(self):        return self.p == '/'
     def __bool__(self):       return bool(self.d)
     def __cmp__(self, other):
@@ -167,6 +168,12 @@ class DirName(Homes): # {{{
     def __str__(self):        return self.d
     def __unicode__(self):    return self.d
     def __repr__(self):       return self.p
+    def list(self, dots = False):
+        l = [ DirName.fetch(J(self.p, x))
+              for x in listdir(self.p)
+              if isdir(J(self.p, x)) and (dots or x[0] != '.') ]
+        l.sort()
+        return l
     # }}}
 
 class BookmarkFile(AbstractList): # {{{
@@ -200,6 +207,7 @@ class EnvList(AbstractList): # {{{
 # {{{ conveniences
 class sym: pass
 
+HOME=Homes()
 DIRT=EnvList()
 BOOK=BookmarkFile()
 SHAR=BookmarkFile(Env.get('DIRT_SHARED','/dev/null'))
@@ -301,7 +309,7 @@ class InteractiveMenu(Menu): # {{{
 
 class DirtMenu(Menu): # {{{
     _desc = lambda o: o.l[o.s].c and TreeMenu(o.w, o.l[o.s])
-    _ascd = lambda o: TreeMenu(o.w, o.l[o.s].s+'/../../', o.x['here'])
+    _ascd = lambda o: TreeMenu(o.w, o.x['here'].parent(), o.x['here'])
     def _subs(o):
         DirName.subs.active = not DirName.subs.active
     def _book(o):
@@ -331,27 +339,16 @@ class DirtMenu(Menu): # {{{
 class TreeMenu(DirtMenu): # {{{
     def _dots(o):
         o.dots = not o.dots
-        o.l = o.mklist(o.x['here'])
+        o.l = DirName.fetch(p).list(self.dots)
         o.s = min(o.s, len(o.l)-1)
     m = dict(DirtMenu.m.items() + {
             ord('.'):    _dots,
             }.items())
-    def mklist(self, p):
-        p = DirName.fetch(p)
-        l = [ DirName.fetch(J(p.p, x))
-              for x in listdir(p.p)
-              if isdir(J(p.p, x)) and (self.dots or x[0] != '.') ]
-        if not l:
-            if not p.is_root(): return self.mklist(J(p.p, '../'))
-            else:               return [DirName.fetch('/')]
-        else:
-            l.sort()
-            return l
     def __init__(self, w, p=None, h=None):
         self.dots = False
         h = DirName.fetch(h)
         p = DirName.fetch(p)
-        l = self.mklist(p)
+        l = p.list(self.dots)
         s = (h in l and l.index(h) or len(l)/2)
         super(TreeMenu, self).__init__(w, l, s, {'here': p})
     # }}}
@@ -367,13 +364,14 @@ class ListMenu(DirtMenu): # {{{
         s = (h in l and l.index(h) or len(l)/2)
         l.sort()
         super(ListMenu, self).__init__(w, l, s, {'here': h})
+    # }}}
 
 class SessionMenu(ListMenu): # {{{
     it = DIRT
     # }}}
 
 class HomeMenu(ListMenu): # {{{
-    it = Homes()
+    it = HOME
     # }}}
 
 class BookmarkMenu(SessionMenu): # {{{
