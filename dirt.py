@@ -88,7 +88,7 @@ class AbstractList(object): # {{{
         return DirName.fetch(d) in self.l
     def __iter__(self):
         if not self.l: self.lazy()
-        return self.l.__iter__()
+        return [ x for x in self.l if x ].__iter__()
     # }}}
 
 class Homes(AbstractList): # {{{
