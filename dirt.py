@@ -340,7 +340,7 @@ class DirtMenu(Menu): # {{{
 class TreeMenu(DirtMenu): # {{{
     def _dots(o):
         o.dots = not o.dots
-        o.l = DirName.fetch(p).list(self.dots)
+        o.l = DirName.fetch(o.x['here']).list(o.dots)
         o.s = min(o.s, len(o.l)-1)
     m = dict(DirtMenu.m.items() + {
             ord('.'):    _dots,
