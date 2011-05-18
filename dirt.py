@@ -66,29 +66,31 @@ class Subber(object): # {{{
         return q
     # }}}
 
-class AbstractList(object): # {{{
-    def __init__(self, *x):
-        self.c = False
-        self.l = None
-        self.z = x
-    def lazy(self):
-        self.load(*self.z)
-        self.l.sort()
+class BaseList(object): # {{{
     def append(self, d):
-        if not self.l: self.lazy()
         d = DirName.fetch(d)
         if d not in self.l: self.c, self.l = True, self.l+[d]
         self.l.sort()
     def remove(self, d):
-        if not self.l: self.lazy()
         d = DirName.fetch(d)
         if d in self.l: self.c, self.l = True, [x for x in self.l if x != d]
-    def __contains__(self, d):
-        if not self.l: self.lazy()
-        return DirName.fetch(d) in self.l
-    def __iter__(self):
-        if not self.l: self.lazy()
-        return [ x for x in self.l if x ].__iter__()
+    def __contains__(self, d):  return DirName.fetch(d) in self.l
+    def __iter__(self):         return [ x for x in self.l if x ].__iter__()
+    def __len__(self):          return len(self.l)
+    def __getitem__(self, k):   return self.l[k]
+    def index(self, x):         return self.l.index(x)
+    # }}}
+
+class AbstractList(BaseList): # {{{
+    def l():
+        def _get(self, v=[]):
+            if not v: v.append(self.load())
+            return v[0]
+        return property(_get)
+    l = l()
+    def __init__(self, *x):
+        self.c = False
+        self.z = x
     # }}}
 
 class Homes(AbstractList): # {{{
@@ -114,8 +116,7 @@ class Homes(AbstractList): # {{{
         for u,d in cls.homes().items():
             if p.find(d) == 0:          return '~'+u+p[len(d):]
         return p
-    def load(self):
-        self.l = self.homedirs()
+    def load(self):            return self.homedirs()
     def save(self, *al, **kw): pass
     append = save
     remove = save
@@ -153,7 +154,6 @@ class DirName(Homes): # {{{
         self.s = p
         self.d = self.subs(p) + ['',' +'][self.c]
         return p or './'
-    #
     def parent(self):         return normpath(J(self.p, '..'))
     def is_root(self):        return self.p == '/'
     def __bool__(self):       return bool(self.d)
@@ -172,8 +172,9 @@ class DirName(Homes): # {{{
         l = [ DirName.fetch(J(self.p, x))
               for x in listdir(self.p)
               if isdir(J(self.p, x)) and (dots or x[0] != '.') ]
-        l.sort()
-        return l
+        w = BaseList()
+        w.l = sorted([ x for x in l if x ])
+        return w
     # }}}
 
 class BookmarkFile(AbstractList): # {{{
@@ -182,10 +183,10 @@ class BookmarkFile(AbstractList): # {{{
     Remember to make sure objects are explicitly destructed.
     """
     def load(self, fn='~/.dirt_bm'):
-        try:    self.l = ([ DirName.fetch(l.strip())
-                           for l in file(expanduser(fn)) ]
-                          or [DirName.fetch('~')])
-        except: self.l = [DirName.fetch('~')]
+        try:    return ([ DirName.fetch(l.strip())
+                          for l in file(expanduser(fn)) ]
+                        or [DirName.fetch('~')])
+        except: return [DirName.fetch('~')]
         self.fn = expanduser(fn)
     def save(self):
         if not self.c: return
@@ -199,7 +200,7 @@ class BookmarkFile(AbstractList): # {{{
 class EnvList(AbstractList): # {{{
     def load(self):
         df = DirName.fetch
-        self.l = [ df(x) for x in Env.get('DIRT','~/').split(':') if x ]
+        return [ df(x) for x in Env.get('DIRT','~/').split(':') if x ]
     def save(self):
         if self.c: print >>E, "DIRT="+":".join(map(lambda x: x.p, self.l)),";",
     # }}}
