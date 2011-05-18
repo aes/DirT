@@ -329,12 +329,12 @@ class DirtMenu(Menu): # {{{
             ord('b'):    lambda o: BookmarkMenu(o.w),
             ord('s'):    lambda o: SessionMenu(o.w),
             ord('d'):    lambda o: TreeMenu(o.w, cwd(), o.x['here']),
-            ord('h'):    lambda o: TreeMenu(o.w, '~', o.x['here']),
+            ord('h'):    lambda o: HomeMenu(o.w, o.x['here']),
             ord('q'):    Menu._done,
             ord('r'):    _subs,
             ord('x'):    lambda o: o._del(),
             ord('z'):    lambda o: SharedMenu(o.w),
-            ord('~'):    lambda o: HomeMenu(o.w, o.x['here']),
+            ord('~'):    lambda o: TreeMenu(o.w, '~', o.x['here']),
             }.items())
     # }}}
 

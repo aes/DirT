@@ -37,8 +37,8 @@ Planned features:
 | s          | Browse session (dirs visited in session)
 | S          | Save highlighted entry in session
 |            |
-| ~          | Homes browser
-| h          | Tree browse from home
+| h          | Homes browser
+| ~          | Tree browse from home
 | d          | Tree browse from current dir
 |            |
 | x          | Remove entry (from Session / Bookmarks)
