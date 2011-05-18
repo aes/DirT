@@ -152,7 +152,8 @@ class DirName(Homes): # {{{
     def _examine(self):
         p = self.normhome(self.p)
         self.s = p
-        self.d = self.subs(p) + ['',' +'][self.c]
+        self.d = self.subs(p)
+        self.d = self.d and self.d + ['',' +'][self.c] # leave empty if empty
         return p or './'
     def parent(self):         return normpath(J(self.p, '..'))
     def is_root(self):        return self.p == '/'

@@ -13,10 +13,12 @@ Currently, it has the following features:
    paths and perhaps other uses.
  * Interactive search, which does a lot for usability when branching factor is
    high.
+ * Ignore patterns to be rid of common nuisances are implemented by
+   substitution to the empty string. (No, it *is* intuitive... to /us/...)
 
 Planned features:
 
- * Ignore patterns, to be rid of common nuisances. (e.g. .xvpics but not .git)
+ * Python 2.x / 3.x portability. (Currently 2.6 is the tested version.)
 
 ## Keys:
 
