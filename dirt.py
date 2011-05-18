@@ -45,14 +45,14 @@ def dist(a, b):
 #}}}
 
 class Subber(object): # {{{
-    cfg_re = re.compile('^([^\t]*)\t+(.*)$')
+    cfg_re = re.compile('^([^\\t]+)\\t+(.*)$')
     def _comp(cls, p):
         try:    return re.compile(p)
         except: return None
     _comp = classmethod(_comp)
     #
     def __init__(self):
-        try:    s = [ x.strip() for x in file(expanduser('~/.dirt_subs')) ]
+        try:    s = [ x for x in file(expanduser('~/.dirt_subs')) ]
         except: s = []
         s = [ self.cfg_re.match(x) for x in s ]
         s = [ (self._comp(x.group(1)), x.group(2)) for x in s if x ]
