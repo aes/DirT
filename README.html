@@ -1,0 +1,163 @@
+<h1>DirT</h1>
+<p>DirT is an interactive browsing enhancement for the 'cd' shell builtin.</p>
+<p>Currently, it has the following features:</p>
+<ul>
+<li>Memory of paths visited in this shell instance. (uses environment variable)</li>
+<li>Bookmarks where you can permanently remember commonly used paths.</li>
+<li>Tree browser that helps alleviate the (cd, tab-tab-tab, expletive, ls)-loop</li>
+<li>Dotfile hiding/unhiding</li>
+<li>Homedir recognition</li>
+<li>Name and path substitutions, to cope with long paths, preferred symlinked
+   paths and perhaps other uses.</li>
+<li>Interactive search, which does a lot for usability when branching factor is
+   high.</li>
+<li>Ignore patterns to be rid of common nuisances are implemented by
+   substitution to the empty string. (No, it <em>is</em> intuitive... to /us/...)</li>
+</ul>
+<p>Planned features:</p>
+<ul>
+<li>Python 2.x / 3.x portability. (Currently 2.6 is the tested version.)</li>
+</ul>
+<h2>Keys:</h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Up / Down</td>
+<td>Browse</td>
+</tr>
+<tr>
+<td>Enter</td>
+<td>Exit and cd to this directory</td>
+</tr>
+<tr>
+<td>Escape, q</td>
+<td>Quit, without doing 'cd'.</td>
+</tr>
+<tr>
+<td />
+<td />
+</tr>
+<tr>
+<td>Right</td>
+<td>Tree-browse directory</td>
+</tr>
+<tr>
+<td>Left</td>
+<td>Tree-browse parent directory</td>
+</tr>
+<tr>
+<td />
+<td />
+</tr>
+<tr>
+<td>b</td>
+<td>Browse bookmarks</td>
+</tr>
+<tr>
+<td>B</td>
+<td>Bookmark highlighted entry</td>
+</tr>
+<tr>
+<td />
+<td />
+</tr>
+<tr>
+<td>s</td>
+<td>Browse session (dirs visited in session)</td>
+</tr>
+<tr>
+<td>S</td>
+<td>Save highlighted entry in session</td>
+</tr>
+<tr>
+<td />
+<td />
+</tr>
+<tr>
+<td>h</td>
+<td>Homes browser</td>
+</tr>
+<tr>
+<td>~</td>
+<td>Tree browse from home</td>
+</tr>
+<tr>
+<td>d</td>
+<td>Tree browse from current dir</td>
+</tr>
+<tr>
+<td />
+<td />
+</tr>
+<tr>
+<td>x</td>
+<td>Remove entry (from Session / Bookmarks)</td>
+</tr>
+<tr>
+<td />
+<td />
+</tr>
+<tr>
+<td>/, _</td>
+<td>Enter interactive search</td>
+</tr>
+</tbody>
+</table>
+<h3>In interactive search mode:</h3>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Escape</td>
+<td>Exit interactive search mode</td>
+</tr>
+<tr>
+<td>Backspace</td>
+<td>Remove last search string char, or exit mode if empty</td>
+</tr>
+<tr>
+<td>' '..'~'</td>
+<td>Add to search string</td>
+</tr>
+</tbody>
+</table>
+<h2>Interactive search mode</h2>
+<p>After you've entered IS, just type a few characters. As you type each char,
+the display list is re-sorted to place the best matches in the middle and
+highlights the middle. IS also shows the current string at the top of the
+screen. Placing best matches in the middle halves is done so that the browse
+distance to an entry is halved.</p>
+<h2>(Display) Substition File</h2>
+<p>If you want some dirs to be displayed as something other than the path, you
+can enter substitution patterns in a file called ~/.dirt_subs. In the subs
+file patterns and replacements are listed, one per line separated by one or
+more tabs:</p>
+<pre><code>pattern (one or more tabs) replacement
+</code></pre>
+<p>Lines that don't follow this pattern are ignored. If you need the pattern to
+include tabs, you can use \t. Replacements can also include \1 or \g<foo>
+as the replacements are done using the standard python re package.</p>
+<h2>LICENCE</h2>
+<p>For now, it's GPLv2. If you know what that means, good for you, enjoy.</p>
+<p>If not, well, you can...</p>
+<ul>
+<li>contact me to negotiate a licence properly, or</li>
+<li>obey whatever all the applicable laws say regardless of license, or</li>
+<li>figure out what I meant, or</li>
+<li>be naughty, and take the risk.</li>
+</ul>
+<p>UNDER NO CIRCUMSTANCES WILL I ACCEPT ANY LEGAL RESPONSIBILITY FOR DEFECTS.</p>
+<p>This software may be used for evil as well as for good. (none of my business.)</p>
+<p>Copyright (C) 2009-2010
+Anders Eurenius <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#101;&#115;&#64;&#110;&#101;&#114;&#100;&#115;&#104;&#97;&#99;&#107;&#46;&#99;&#111;&#109;">&#97;&#101;&#115;&#64;&#110;&#101;&#114;&#100;&#115;&#104;&#97;&#99;&#107;&#46;&#99;&#111;&#109;</a></p>
