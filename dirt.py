@@ -160,7 +160,7 @@ class DirName(Homes): # {{{
     def __cmp__(self, other):
         if isinstance(other,    DirName): return cmp(self.p, other)
         if isinstance(other, basestring): return cmp(self.p, other)
-        raise TypeError, type(other)
+        raise TypeError(type(other))
     def __len__(self):        return len(self.d)
     def __add__(self, other):
         if isinstance(other, DirName): return J(self.p, other.p)
@@ -225,7 +225,7 @@ class Menu(object): # {{{
     def _first(o):    o.s = 0
     def _last(o):     o.s = len(o.l) - 1
     def _del(o):      o.l, o.s = o.l[:o.s]+o.l[o.s+1:], min(len(o.l) - 2, o.s)
-    def _done(o, *a): raise StopIteration, a
+    def _done(o, *a): raise StopIteration(a)
     def _srch(o):     return InteractiveMenu(o)
     m = { C.KEY_UP:     _prev,
           C.KEY_DOWN:   _next,
@@ -395,7 +395,7 @@ def wrap(f): # {{{
 
         ret = f(stdscr)
 
-    except Exception, e:
+    except Exception as e:
         ret = None
         if not isinstance(e, StopIteration):
             C.curs_set(1); C.nocbreak(); stdscr.keypad(0); C.echo(); C.endwin()
