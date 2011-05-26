@@ -82,15 +82,19 @@ class BaseList(object): # {{{
     # }}}
 
 class AbstractList(BaseList): # {{{
+    _ll = {}
+    _w = {}
     def l():
-        def _get(self, v=[]):
-            if not v: v.append(self.load())
-            return v[0]
+        def _get(self):
+            if self not in self._ll: self._ll[self] = self.load()
+            self._w[self] = getattr(self, 'fn', 'x')
+            return self._ll[self]
         return property(_get)
     l = l()
-    def __init__(self, *x):
+    def __init__(self, *al, **kw):
         self.c = False
-        self.z = x
+        self.al = al
+	self.kw = kw
     # }}}
 
 class Homes(AbstractList): # {{{
@@ -183,12 +187,13 @@ class BookmarkFile(AbstractList): # {{{
 
     Remember to make sure objects are explicitly destructed.
     """
-    def load(self, fn='~/.dirt_bm'):
+    def load(self):
+        fn= self.kw.get('fn', '~/.dirt_bm')
+        self.fn = expanduser(fn)
         try:    return ([ DirName.fetch(l.strip())
                           for l in file(expanduser(fn)) ]
                         or [DirName.fetch('~')])
         except: return [DirName.fetch('~')]
-        self.fn = expanduser(fn)
     def save(self):
         if not self.c: return
         try:
@@ -212,7 +217,7 @@ class sym: pass
 HOME=Homes()
 DIRT=EnvList()
 BOOK=BookmarkFile()
-SHAR=BookmarkFile(Env.get('DIRT_SHARED','/dev/null'))
+SHAR=BookmarkFile(fn = Env.get('DIRT_SHARED','/tmp/'+Env.get('USER')+'.dirt'))
 # }}}
 
 class Menu(object): # {{{
