@@ -69,11 +69,11 @@ class Subber(object): # {{{
 class BaseList(object): # {{{
     def append(self, d):
         d = DirName.fetch(d)
-        if d not in self.l: self.c, self.l = True, self.l+[d]
+        if d not in self.l: self.c, self.l[:] = True, self.l+[d]
         self.l.sort()
     def remove(self, d):
         d = DirName.fetch(d)
-        if d in self.l: self.c, self.l = True, [x for x in self.l if x != d]
+        if d in self.l: self.c, self.l[:] = True, [x for x in self.l if x != d]
     def __contains__(self, d):  return DirName.fetch(d) in self.l
     def __iter__(self):         return [ x for x in self.l if x ].__iter__()
     def __len__(self):          return len(self.l)
