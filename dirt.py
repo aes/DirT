@@ -390,24 +390,35 @@ class SharedMenu(SessionMenu): # {{{
     # }}}
 
 def wrap(f): # {{{
+    i, o, r, w = (None,)*4
+    def cleanup():
+        C.curs_set(1); C.nocbreak(); stdscr.keypad(0); C.echo(); C.endwin()
+        if i: os.dup2(i, 0)
+        if o: os.dup2(o, 1)
     try:
         import locale
         locale.setlocale(locale.LC_ALL, '')
         code = locale.getpreferredencoding()
+
+        i = os.dup(sys.stdin.fileno())
+        o = os.dup(sys.stdout.fileno())
+        r = open('/dev/tty','r')
+        w = open('/dev/tty','w')
+        os.dup2(r.fileno(), 0)
+        os.dup2(w.fileno(), 1)
 
         stdscr = C.initscr(); C.noecho(); C.cbreak()
         stdscr.keypad(1)
         C.curs_set(0)
 
         ret = f(stdscr)
-
-    except Exception as e:
+    except StopIteration:
         ret = None
-        if not isinstance(e, StopIteration):
-            C.curs_set(1); C.nocbreak(); stdscr.keypad(0); C.echo(); C.endwin()
-            raise
+    except Exception as e:
+        cleanup()
+        raise
 
-    C.curs_set(1); C.nocbreak(); stdscr.keypad(0); C.echo(); C.endwin()
+    cleanup()
     return ret
     # }}}
 
