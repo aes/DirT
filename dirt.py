@@ -272,14 +272,16 @@ class Menu(object): # {{{
         #raise RuntimeError, (z, q,0, 1,1, min(y, z[0]-1-q), min(x, z[1]-1))
         p.overlay(w, q,0, 1,1, min(y-1, z[0]-1-q), min(x-1, z[1]-1))
         #
-        w.refresh()
-    def input(self, c): return self.m.get(c)
+        self.refresh()
+    def refresh(self):  return self.w.refresh()
+    def mapch(self, c): return self.m.get(c)
+    def getch(self):    return self.w.getch()
     def run(self):
         while True:
             self.draw()
-            try:                      c = self.w.getch()
+            try:                      c = self.getch()
             except KeyboardInterrupt: c = 27
-            f = self.input(c)
+            f = self.mapch(c)
             if callable(f):
                 c = f(self)
                 if c: return c != Menu.QUIT and c or None
