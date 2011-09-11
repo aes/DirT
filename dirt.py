@@ -208,7 +208,7 @@ class EnvList(AbstractList): # {{{
         df = DirName.fetch
         return [ df(x) for x in Env.get('DIRT','~/').split(':') if x ]
     def save(self):
-        if self.c: print >>E, "DIRT="+":".join(map(lambda x: x.p, self.l)),";",
+        if self.c: print "DIRT="+":".join(map(lambda x: x.p, self.l)),";",
     # }}}
 
 # {{{ conveniences
@@ -391,8 +391,10 @@ class SharedMenu(SessionMenu): # {{{
 
 def wrap(f): # {{{
     i, o, r, w = (None,)*4
+    stdscr = None
     def cleanup():
-        C.curs_set(1); C.nocbreak(); stdscr.keypad(0); C.echo(); C.endwin()
+        if stdscr:
+            C.curs_set(1); C.nocbreak(); stdscr.keypad(0); C.echo(); C.endwin()
         if i: os.dup2(i, 0)
         if o: os.dup2(o, 1)
     try:
@@ -422,8 +424,8 @@ def wrap(f): # {{{
     return ret
     # }}}
 
-if __name__ == '__main__': # {{{
-    x = len(sys.argv) > 1 and sys.argv[1] or None
+def parse_args(argv):
+    x = len(argv) > 1 and argv[1] or None
     if   x == '-b': Begin, x = BookmarkMenu, None
     elif x == '-t': Begin, x = TreeMenu,     None
     elif x == '-s': Begin, x = SessionMenu,  None
@@ -435,8 +437,10 @@ if __name__ == '__main__': # {{{
         m = Begin(w, x)
         while isinstance(m, Menu): m = m.run()
         return repr(m.s)[1:-1]
-    p = wrap(run_menus)
-    E = sys.stderr
+    return run_menus
+
+if __name__ == '__main__': # {{{
+    p = wrap(parse_args(sys.argv))
     for x in (BOOK, SHAR, DIRT): x.save()
-    if p and p != cwd(): print >>E, 'cd ' + str(shellsafe(p)),
+    if p and p != cwd(): 'cd ' + str(shellsafe(p)),
     # }}}
