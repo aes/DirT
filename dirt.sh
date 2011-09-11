@@ -22,7 +22,7 @@ function pcmd()
   chmod 0600 $DIRT_SHARED.new
   echo ${PWD} | cat $DIRT_SHARED - 2>/dev/null |\
       dirt_filter >> ${DIRT_SHARED}.new &&\
-    mv ${DIRT_SHARED}.new ${DIRT_SHARED}
+    mv ${DIRT_SHARED}.new ${DIRT_SHARED} >/dev/null 2>&1
   $DIRT_SAVED_PROMPT_COMMAND
 }
 PROMPT_COMMAND=pcmd
