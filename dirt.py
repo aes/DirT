@@ -444,5 +444,6 @@ def parse_args(argv):
 if __name__ == '__main__': # {{{
     p = wrap(parse_args(sys.argv))
     for x in (BOOK, SHAR, DIRT): x.save()
-    if p and p != cwd(): 'cd ' + str(shellsafe(p)),
+    if p and p != cwd():
+        print 'cd ' + str(shellsafe(p)),
     # }}}
