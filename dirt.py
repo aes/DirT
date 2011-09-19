@@ -397,65 +397,59 @@ class SharedMenu(SessionMenu): # {{{
     it = SHAR
     # }}}
 
-def wrap(f): # {{{
-    i, o, r, w = (None,)*4
-    stdscr = None
-    def cleanup():
+stdscr = None
+
+class CursesContext:
+    def __init__(self):
+        pass
+    def __enter__(self):
+        self.i = os.dup(sys.stdin.fileno())
+        self.o = os.dup(sys.stdout.fileno())
+        self.r = open('/dev/tty', 'r')
+        self.w = open('/dev/tty', 'w')
+        os.dup2(self.r.fileno(), 0)
+        os.dup2(self.w.fileno(), 1)
+
+        global stdscr
+        self.old_stdscr = stdscr
+        self.stdscr = stdscr = curses.initscr()
+        curses.noecho()
+        curses.cbreak()
+        stdscr.keypad(1)
+        curses.curs_set(0)
+        return stdscr
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        global stdscr
         if stdscr:
             curses.curs_set(1)
             curses.nocbreak()
             stdscr.keypad(0)
             curses.echo()
             curses.endwin()
-        if i: os.dup2(i, 0)
-        if o: os.dup2(o, 1)
-    try:
-        import locale
-        locale.setlocale(locale.LC_ALL, '')
-        code = locale.getpreferredencoding()
-
-        i = os.dup(sys.stdin.fileno())
-        o = os.dup(sys.stdout.fileno())
-        r = open('/dev/tty','r')
-        w = open('/dev/tty','w')
-        os.dup2(r.fileno(), 0)
-        os.dup2(w.fileno(), 1)
-
-        stdscr = curses.initscr()
-        curses.noecho()
-        curses.cbreak()
-        stdscr.keypad(1)
-        curses.curs_set(0)
-
-        ret = f(stdscr)
-    except StopIteration:
-        ret = None
-    except Exception as e:
-        cleanup()
-        raise
-
-    cleanup()
-    return ret
-    # }}}
+            stdscr = self.old_stdscr
+        if self.i: os.dup2(self.i, 0)
+        if self.o: os.dup2(self.o, 1)
+        return exc_type is KeyboardInterrupt
 
 def parse_args(argv):
-    x = len(argv) > 1 and argv[1] or None
-    if   x == '-b': Begin, x = BookmarkMenu, None
-    elif x == '-t': Begin, x = TreeMenu,     None
-    elif x == '-s': Begin, x = SessionMenu,  None
-    elif x == '-z': Begin, x = SharedMenu,   None
-    elif x == '-h': Begin, x = HomeMenu,     None
-    elif x:         Begin, x = TreeMenu,     isdir(x) and x or None
-    else:           Begin, x = SessionMenu,  None
-    def run_menus(w):
-        m = Begin(w, x)
-        while isinstance(m, Menu): m = m.run()
-        return repr(m.s)[1:-1]
-    return run_menus
+    if   argv[1:2] == ['-b']: return BookmarkMenu, ()
+    elif argv[1:2] == ['-t']: return TreeMenu,     ()
+    elif argv[1:2] == ['-s']: return SessionMenu,  ()
+    elif argv[1:2] == ['-z']: return SharedMenu,   ()
+    elif argv[1:2] == ['-h']: return HomeMenu,     ()
+    elif argv[1:2]:           return TreeMenu,     (isdir(x),) if x else ()
+    else:                     return SessionMenu,  ()
 
 if __name__ == '__main__': # {{{
-    p = wrap(parse_args(sys.argv))
-    for x in (BOOK, SHAR, DIRT): x.save()
-    if p and p != getcwd():
-        print 'cd ' + str(shellsafe(p)),
+    M, al = parse_args(sys.argv)
+    with CursesContext() as stdscr:
+        m = M(stdscr, *al)
+        while isinstance(m, Menu): m = m.run()
+        p = repr(m.s)[1:-1]
+
+    for x in (BOOK, SHAR, DIRT):
+        x.save()
+
+    if p and expanduser(p) != getcwd():
+        print 'cd ' + str(shellsafe(p))
     # }}}
