@@ -9,10 +9,15 @@ Put the contents of dirt.sh in your .bashrc, or just source it.
 """
 # }}}
 
-import sys,os,curses as C,os.path, re, pwd
+import sys
+import os
+import curses
+import os.path
+import re
+import pwd
 
-from os import listdir, environ as Env, getcwd as cwd
-from os.path import isdir, normpath, expanduser, join as J
+from os import listdir, environ, getcwd
+from os.path import isdir, normpath, expanduser, join
 
 # {{{ utils
 def u8(s):
@@ -130,11 +135,11 @@ class DirName(Homes): # {{{
     subs = Subber()
     cache = {}
     def norm(cls, p):
-        return normpath(expanduser(p or cwd()))
+        return normpath(expanduser(p or getcwd()))
     norm = classmethod(norm)
     def fetch(cls, p):
         if isinstance(p, DirName): return p
-        if p and p[:3] == '../': p = cls.norm(J(cwd(), p))
+        if p and p[:3] == '../': p = cls.norm(join(getcwd(), p))
         else:                    p = cls.norm(p)
         x = cls.cache.get(p)
         if x: return x
@@ -159,7 +164,7 @@ class DirName(Homes): # {{{
         self.d = self.subs(p)
         self.d = self.d and self.d + ['',' +'][self.c] # leave empty if empty
         return p or './'
-    def parent(self):         return normpath(J(self.p, '..'))
+    def parent(self):         return normpath(join(self.p, '..'))
     def is_root(self):        return self.p == '/'
     def __bool__(self):       return bool(self.d)
     def __cmp__(self, other):
@@ -168,15 +173,15 @@ class DirName(Homes): # {{{
         raise TypeError(type(other))
     def __len__(self):        return len(self.d)
     def __add__(self, other):
-        if isinstance(other, DirName): return J(self.p, other.p)
-        else:                          return J(self.p, u8(other))
+        if isinstance(other, DirName): return join(self.p, other.p)
+        else:                          return join(self.p, u8(other))
     def __str__(self):        return self.d
     def __unicode__(self):    return self.d
     def __repr__(self):       return self.p
     def list(self, dots = False):
-        l = [ DirName.fetch(J(self.p, x))
+        l = [ DirName.fetch(join(self.p, x))
               for x in listdir(self.p)
-              if isdir(J(self.p, x)) and (dots or x[0] != '.') ]
+              if isdir(join(self.p, x)) and (dots or x[0] != '.') ]
         w = BaseList()
         w.l = sorted([ x for x in l if x ])
         return w
@@ -206,7 +211,7 @@ class BookmarkFile(AbstractList): # {{{
 class EnvList(AbstractList): # {{{
     def load(self):
         df = DirName.fetch
-        return [ df(x) for x in Env.get('DIRT','~/').split(':') if x ]
+        return [ df(x) for x in environ.get('DIRT','~/').split(':') if x ]
     def save(self):
         if self.c: print "DIRT="+":".join(map(lambda x: x.p, self.l)),";",
     # }}}
@@ -217,13 +222,14 @@ class sym: pass
 HOME=Homes()
 DIRT=EnvList()
 BOOK=BookmarkFile()
-SHAR=BookmarkFile(fn = Env.get('DIRT_SHARED','/tmp/'+Env.get('USER')+'.dirt'))
+SHAR=BookmarkFile(fn=environ.get('DIRT_SHARED', '/tmp/' +
+                                 environ.get('USER') + '.dirt'))
 # }}}
 
 class Menu(object): # {{{
     QUIT = sym()
     step = 10
-    cc   = [ C.A_NORMAL, C.A_REVERSE ]
+    cc   = [ curses.A_NORMAL, curses.A_REVERSE ]
     def _prev(o):     o.s = max(           0, o.s - 1)
     def _next(o):     o.s = min(len(o.l) - 1, o.s + 1)
     def _pgup(o):     o.s = max(           0, o.s - o.step)
@@ -233,12 +239,12 @@ class Menu(object): # {{{
     def _del(o):      o.l, o.s = o.l[:o.s]+o.l[o.s+1:], min(len(o.l) - 2, o.s)
     def _done(o, *a): raise StopIteration(a)
     def _srch(o):     return InteractiveMenu(o)
-    m = { C.KEY_UP:     _prev,
-          C.KEY_DOWN:   _next,
-          C.KEY_PPAGE:  _pgup,
-          C.KEY_NPAGE:  _pgdn,
-          C.KEY_HOME:   _first,
-          C.KEY_END:    _last,
+    m = { curses.KEY_UP:     _prev,
+          curses.KEY_DOWN:   _next,
+          curses.KEY_PPAGE:  _pgup,
+          curses.KEY_NPAGE:  _pgdn,
+          curses.KEY_HOME:   _first,
+          curses.KEY_END:    _last,
           ord("\n"):    lambda o: o.l[o.s],
           ord("\r"):    lambda o: o.l[o.s],
           ord('/'):     _srch,
@@ -253,7 +259,7 @@ class Menu(object): # {{{
         _z = (len(self.l)+1, max([2]+[len(x)+1 for x in self.l]))
         if self._z != _z:
             self._z = _z
-            self._p = C.newpad(*self._z)
+            self._p = curses.newpad(*self._z)
         self._p.clear()
         return self._p
     def draw(self):
@@ -263,7 +269,7 @@ class Menu(object): # {{{
         if y < 2 or x < 4: raise RuntimeError
         #
         w.clear()
-        w.addstr(0, 1, self.t, C.A_BOLD)
+        w.addstr(0, 1, self.t, curses.A_BOLD)
         #
         for i in range(len(l)): p.addstr(i, 0, u8(l[i].d), cc[i==s])
         #
@@ -293,8 +299,8 @@ class InteractiveMenu(Menu): # {{{
         o.q = o.q[:-1]
         o.redo()
     m = dict(Menu.m.items() + {
-            C.KEY_BACKSPACE: _bs,
-            C.KEY_LEFT:      lambda o: o.ctx,
+            curses.KEY_BACKSPACE: _bs,
+            curses.KEY_LEFT:      lambda o: o.ctx,
             27:              lambda o: o.ctx,
         }.items())
     def __init__(self, ctx):
@@ -328,14 +334,14 @@ class DirtMenu(Menu): # {{{
         p = DirName.fetch(o.l[o.s]).s
         if p not in DIRT: DIRT.append(p)
     m = dict(Menu.m.items() + {
-            C.KEY_RIGHT: _desc,
-            C.KEY_LEFT:  _ascd,
-            C.KEY_DC:    lambda o: o._del(),
+            curses.KEY_RIGHT: _desc,
+            curses.KEY_LEFT:  _ascd,
+            curses.KEY_DC:    lambda o: o._del(),
             ord('B'):    _book,
             ord('S'):    _save,
             ord('b'):    lambda o: BookmarkMenu(o.w),
             ord('s'):    lambda o: SessionMenu(o.w),
-            ord('d'):    lambda o: TreeMenu(o.w, cwd(), o.x['here']),
+            ord('d'):    lambda o: TreeMenu(o.w, getcwd(), o.x['here']),
             ord('h'):    lambda o: HomeMenu(o.w, o.x['here']),
             ord('q'):    Menu._done,
             ord('r'):    _subs,
@@ -368,7 +374,7 @@ class ListMenu(DirtMenu): # {{{
         o.it.remove(o.l[o.s].s)
         Menu._del(o)
     def __init__(self, w, h=None):
-        h = DirName.fetch(h or cwd())
+        h = DirName.fetch(h or getcwd())
         l = [ DirName.fetch(x) for x in self.it ]
         s = (h in l and l.index(h) or len(l)/2)
         l.sort()
@@ -396,7 +402,11 @@ def wrap(f): # {{{
     stdscr = None
     def cleanup():
         if stdscr:
-            C.curs_set(1); C.nocbreak(); stdscr.keypad(0); C.echo(); C.endwin()
+            curses.curs_set(1)
+            curses.nocbreak()
+            stdscr.keypad(0)
+            curses.echo()
+            curses.endwin()
         if i: os.dup2(i, 0)
         if o: os.dup2(o, 1)
     try:
@@ -411,9 +421,11 @@ def wrap(f): # {{{
         os.dup2(r.fileno(), 0)
         os.dup2(w.fileno(), 1)
 
-        stdscr = C.initscr(); C.noecho(); C.cbreak()
+        stdscr = curses.initscr()
+        curses.noecho()
+        curses.cbreak()
         stdscr.keypad(1)
-        C.curs_set(0)
+        curses.curs_set(0)
 
         ret = f(stdscr)
     except StopIteration:
@@ -444,6 +456,6 @@ def parse_args(argv):
 if __name__ == '__main__': # {{{
     p = wrap(parse_args(sys.argv))
     for x in (BOOK, SHAR, DIRT): x.save()
-    if p and p != cwd():
+    if p and p != getcwd():
         print 'cd ' + str(shellsafe(p)),
     # }}}
