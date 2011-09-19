@@ -57,7 +57,7 @@ class Subber(object): # {{{
     _comp = classmethod(_comp)
     #
     def __init__(self):
-        try:    s = [ x for x in file(expanduser('~/.dirt_subs')) ]
+        try:    s = [ x for x in open(expanduser('~/.dirt_subs')) ]
         except: s = []
         s = [ self.cfg_re.match(x) for x in s ]
         s = [ (self._comp(x.group(1)), x.group(2)) for x in s if x ]
@@ -108,7 +108,10 @@ class Homes(AbstractList): # {{{
     _homesdict = {}
     def homes(cls):
         if not cls._homesdict:
-            s = [x.strip() for x in file('/etc/shells') if x and x[0]=='/']
+            try:
+                s = [x.strip() for x in open('/etc/shells') if x and x[0]=='/']
+            except:
+                s = []
             h = dict([(x[0],x[5]) for x in pwd.getpwall() if x[6] in s])
             cls._homesdict = h
         return cls._homesdict
@@ -196,13 +199,13 @@ class BookmarkFile(AbstractList): # {{{
         fn= self.kw.get('fn', '~/.dirt_bm')
         self.fn = expanduser(fn)
         try:    return ([ DirName.fetch(l.strip())
-                          for l in file(expanduser(fn)) ]
+                          for l in open(self.fn) ]
                         or [DirName.fetch('~')])
         except: return [DirName.fetch('~')]
     def save(self):
         if not self.c: return
         try:
-            f = file(self.fn, 'w')
+            f = open(self.fn, 'w')
             f.write("".join([ d.s+"\n" for d in self.l ]))
             f.close()
         except: pass
@@ -222,8 +225,8 @@ class sym: pass
 HOME=Homes()
 DIRT=EnvList()
 BOOK=BookmarkFile()
-SHAR=BookmarkFile(fn=environ.get('DIRT_SHARED', '/tmp/' +
-                                 environ.get('USER') + '.dirt'))
+SHAR=BookmarkFile(fn=environ.get('DIRT_SHARED',
+                                 '/tmp/' + environ.get('USER') + '.dirt'))
 # }}}
 
 class Menu(object): # {{{
