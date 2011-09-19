@@ -429,7 +429,7 @@ class CursesContext:
             stdscr = self.old_stdscr
         if self.i: os.dup2(self.i, 0)
         if self.o: os.dup2(self.o, 1)
-        return exc_type is KeyboardInterrupt
+        return exc_type in (StopIteration, KeyboardInterrupt,)
 
 def parse_args(argv):
     if   argv[1:2] == ['-b']: return BookmarkMenu, ()
@@ -444,7 +444,9 @@ if __name__ == '__main__': # {{{
     M, al = parse_args(sys.argv)
     with CursesContext() as stdscr:
         m = M(stdscr, *al)
-        while isinstance(m, Menu): m = m.run()
+        while isinstance(m, Menu):
+            try:    m = m.run()
+            except: break
         p = repr(m.s)[1:-1]
 
     for x in (BOOK, SHAR, DIRT):
