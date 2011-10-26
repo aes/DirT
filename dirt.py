@@ -319,7 +319,7 @@ class InteractiveMenu(Menu): # {{{
             else:      l = l+[x]
         self.t = '/'+self.q+' '
         self.s, self.l = len(l)/2, [ y for x, y in l ]
-    def input(self, c):
+    def mapch(self, c):
         if not (31 < c < 127): return self.m.get(c) or self.ctx.input(c)
         self.q += chr(c)
         self.redo()
