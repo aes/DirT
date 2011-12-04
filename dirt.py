@@ -54,11 +54,12 @@ def dist(a, b):
 
 class Subber(object):  # {{{
     cfg_re = re.compile('^([^\\t]+)\\t+(.*)$')
+
+    @classmethod
     def _comp(cls, p):
         try:    return re.compile(p)
         except: return None
-    _comp = classmethod(_comp)
-    #
+
     def __init__(self):
         try:    s = [ x for x in open(expanduser('~/.dirt_subs')) ]
         except: s = []
@@ -66,9 +67,11 @@ class Subber(object):  # {{{
         s = [ (self._comp(x.group(1)), x.group(2)) for x in s if x ]
         self.subs = [ x for x in s if x[0] ]
         self.active = True
+
     def add(self, pat, repl):
         pat = self._comp(pat)
         if pat: self.subs.append( (pat, repl) )
+
     def __call__(self, q):
         for pat, repl in self.subs: q = pat.sub(repl, q)
         return q
@@ -152,9 +155,12 @@ class Homes(AbstractList):  # {{{
 class DirName(Homes):  # {{{
     subs = Subber()
     cache = {}
+
+    @classmethod
     def norm(cls, p):
         return normpath(expanduser(p or getcwd()))
-    norm = classmethod(norm)
+
+    @classmethod
     def fetch(cls, p):
         if isinstance(p, DirName): return p
         if p and p[:3] == '../': p = cls.norm(join(getcwd(), p))
@@ -164,7 +170,7 @@ class DirName(Homes):  # {{{
         x = DirName(p)
         cls.cache[x.p] = x
         return x
-    fetch = classmethod(fetch)
+
     def __init__(self, p=None):
         self.p = self.norm(p)
         self.c = self._has_dir()
@@ -186,7 +192,7 @@ class DirName(Homes):  # {{{
     def is_root(self):        return self.p == '/'
     def __bool__(self):       return bool(self.d)
     def __cmp__(self, other):
-        if isinstance(other,    DirName): return cmp(self.p, other)
+        if isinstance(other,    DirName): return cmp(self.p, other.p)
         if isinstance(other, basestring): return cmp(self.p, other)
         raise TypeError(type(other))
     def __len__(self):        return len(self.d)
@@ -241,8 +247,8 @@ class sym: pass
 HOME = Homes()
 DIRT = EnvList()
 BOOK = BookmarkFile()
-SHAR = BookmarkFile(fn=environ.get('DIRT_SHARED',
-                                   '/tmp/' + environ.get('USER') + '.dirt'))
+SHARED = BookmarkFile(
+    fn=environ.get('DIRT_SHARED', '/tmp/' + environ.get('USER') + '.dirt'))
 # }}}
 
 class Menu(object):  # {{{
@@ -349,7 +355,7 @@ class InteractiveMenu(Menu):  # {{{
 
 class DirtMenu(Menu):  # {{{
     _desc = lambda o: o.l[o.s].c and TreeMenu(o.w, o.l[o.s])
-    _ascd = lambda o: TreeMenu(o.w, o.x['here'].parent(), o.x['here'])
+    _ascd = lambda o: TreeMenu(o.w, o.l[o.s].parent(), o.l[o.s])
     def _subs(o):
         DirName.subs.active = not DirName.subs.active
     def _book(o):
@@ -377,19 +383,22 @@ class DirtMenu(Menu):  # {{{
     # }}}
 
 class TreeMenu(DirtMenu):  # {{{
+    @staticmethod
     def _dots(o):
         o.dots = not o.dots
         o.l = DirName.fetch(o.x['here']).list(o.dots)
         o.s = min(o.s, len(o.l) - 1)
     m = dict(DirtMenu.m.items() + {
             ord('.'):    _dots,
+            curses.KEY_LEFT:
+                lambda o: TreeMenu(o.w, o.x['here'].parent(), o.x['here'])
             }.items())
     def __init__(self, w, p=None, h=None):
         self.dots = False
         h = DirName.fetch(h)
         p = DirName.fetch(p)
         l = p.list(self.dots)
-        s = (h in l and l.index(h) or len(l) / 2)
+        s = l.index(h) if h in l else len(l) / 2
         super(TreeMenu, self).__init__(w, l, s, {'here': p})
     # }}}
 
@@ -401,30 +410,19 @@ class ListMenu(DirtMenu):  # {{{
     def __init__(self, w, h=None):
         h = DirName.fetch(h or getcwd())
         l = [ DirName.fetch(x) for x in self.it ]
-        s = (h in l and l.index(h) or len(l) / 2)
         l.sort()
+        s = (h in l and l.index(h) or len(l) / 2)
         super(ListMenu, self).__init__(w, l, s, {'here': h})
     # }}}
 
-class SessionMenu(ListMenu):  # {{{
-    it = DIRT
-    # }}}
-
-class HomeMenu(ListMenu):  # {{{
-    it = HOME
-    # }}}
-
-class BookmarkMenu(SessionMenu):  # {{{
-    it = BOOK
-    # }}}
-
-class SharedMenu(SessionMenu):  # {{{
-    it = SHAR
-    # }}}
+class SessionMenu(ListMenu):    it = DIRT
+class HomeMenu(ListMenu):       it = HOME
+class BookmarkMenu(ListMenu):   it = BOOK
+class SharedMenu(ListMenu):     it = SHARED
 
 stdscr = None
 
-class CursesContext:
+class CursesContext:  # {{{
     def __init__(self):
         pass
     def __enter__(self):
@@ -455,8 +453,9 @@ class CursesContext:
         if self.i: os.dup2(self.i, 0)
         if self.o: os.dup2(self.o, 1)
         return exc_type in (StopIteration, KeyboardInterrupt,)
+    # }}}
 
-def parse_args(argv):
+def parse_args(argv):  # {{{
     if   argv[1:2] == ['-b']: return BookmarkMenu, ()
     elif argv[1:2] == ['-t']: return TreeMenu,     ()
     elif argv[1:2] == ['-s']: return SessionMenu,  ()
@@ -464,6 +463,7 @@ def parse_args(argv):
     elif argv[1:2] == ['-h']: return HomeMenu,     ()
     elif argv[1:2]:           return TreeMenu,     (isdir(x),) if x else ()
     else:                     return SessionMenu,  ()
+    # }}}
 
 if __name__ == '__main__':  # {{{
     M, al = parse_args(sys.argv)
@@ -474,7 +474,7 @@ if __name__ == '__main__':  # {{{
             except: break
         p = repr(m.s)[1:-1]
 
-    for x in (BOOK, SHAR, DIRT):
+    for x in (BOOK, SHARED, DIRT):
         x.save()
 
     if p and expanduser(p) != getcwd():
