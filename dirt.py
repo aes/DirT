@@ -26,18 +26,21 @@ def u8(s):
 
 def shellsafe(s, z=re.compile('[^/0-9A-Za-z,.~=+-]')):
     if isinstance(s, DirName): s = str(s)
-    if isinstance(s, basestring): return z.sub(lambda mo: '\\'+mo.group(0), s)
+    if isinstance(s, basestring): return z.sub(lambda m: '\\' + m.group(0), s)
     else:                         return [shellsafe(x) for x in s]
 
-def levenshtein(a,b): # {{{
+def levenshtein(a, b):  # {{{
     "Calculates the Levenshtein distance between a and b."
     n, m = len(a), len(b)
-    if n > m: a,b, n,m = b,a, m,n
-    cur = range(n+1)
-    for i in range(1,m+1):
-        prev, cur = cur, [i]+[0]*n
-        for j in range(1,n+1):
-            add,rem,chg = prev[j]+1, cur[j-1]+1, prev[j-1]+int(a[j-1]!=b[i-1])
+    if n > m: (a, b), (n, m) = (b, a), (m, n)
+    cur = range(n + 1)
+    for i in range(1, m + 1):
+        prev, cur = cur, [i] + [0] * n
+        for j in range(1, n + 1):
+            (add, rem, chg) = (
+                prev[j] + 1,
+                cur[j - 1] + 1,
+                prev[j - 1] + int(a[j - 1] != b[i - 1]))
             cur[j] = min(add, rem, chg)
     return cur[n]
     # }}}
@@ -49,7 +52,7 @@ def dist(a, b):
     return d
 #}}}
 
-class Subber(object): # {{{
+class Subber(object):  # {{{
     cfg_re = re.compile('^([^\\t]+)\\t+(.*)$')
     def _comp(cls, p):
         try:    return re.compile(p)
@@ -65,16 +68,16 @@ class Subber(object): # {{{
         self.active = True
     def add(self, pat, repl):
         pat = self._comp(pat)
-        if pat: self.subs.append( (pat,repl) )
+        if pat: self.subs.append( (pat, repl) )
     def __call__(self, q):
-        for pat,repl in self.subs: q = pat.sub(repl, q)
+        for pat, repl in self.subs: q = pat.sub(repl, q)
         return q
     # }}}
 
-class BaseList(object): # {{{
+class BaseList(object):  # {{{
     def append(self, d):
         d = DirName.fetch(d)
-        if d not in self.l: self.c, self.l[:] = True, self.l+[d]
+        if d not in self.l: self.c, self.l[:] = True, self.l + [d]
         self.l.sort()
     def remove(self, d):
         d = DirName.fetch(d)
@@ -86,7 +89,7 @@ class BaseList(object): # {{{
     def index(self, x):         return self.l.index(x)
     # }}}
 
-class AbstractList(BaseList): # {{{
+class AbstractList(BaseList):  # {{{
     _ll = {}
     _w = {}
     def l():
@@ -99,42 +102,54 @@ class AbstractList(BaseList): # {{{
     def __init__(self, *al, **kw):
         self.c = False
         self.al = al
-	self.kw = kw
+        self.kw = kw
     # }}}
 
-class Homes(AbstractList): # {{{
+class Homes(AbstractList):  # {{{
     _userhome  = normpath(expanduser('~'))
     _homecache = None
     _homesdict = {}
+
+    @classmethod
     def homes(cls):
         if not cls._homesdict:
             try:
-                s = [x.strip() for x in open('/etc/shells') if x and x[0]=='/']
+                s = [x.strip()
+                     for x in open('/etc/shells')
+                     if x and x[0] is '/']
             except:
                 s = []
-            h = dict([(x[0],x[5]) for x in pwd.getpwall() if x[6] in s])
+            h = dict([(x[0], x[5])
+                      for x in pwd.getpwall()
+                      if x[6] in s])
             cls._homesdict = h
         return cls._homesdict
-    homes = classmethod(homes)
+
+    @classmethod
     def homedirs(cls):
         if not cls._homecache:
-            cls._homecache = [ DirName.fetch('~'+x) for x in cls.homes() ]
+            cls._homecache = [ DirName.fetch('~' + x) for x in cls.homes() ]
         return cls._homecache
-    homedirs = classmethod(homedirs)
+
     def normhome(cls, p=None):
         if not p: return p
+
         p = normpath(expanduser(p))
-        if p.find(cls._userhome) == 0:  return '~'+p[len(cls._userhome):]
-        for u,d in cls.homes().items():
-            if p.find(d) == 0:          return '~'+u+p[len(d):]
+
+        if p.find(cls._userhome) == 0:  return '~' + p[len(cls._userhome):]
+
+        for u, d in cls.homes().items():
+            if p.find(d) == 0:          return '~' + u + p[len(d):]
+
         return p
+
     def load(self):            return self.homedirs()
     def save(self, *al, **kw): pass
     append = save
     remove = save
     # }}}
 
-class DirName(Homes): # {{{
+class DirName(Homes):  # {{{
     subs = Subber()
     cache = {}
     def norm(cls, p):
@@ -158,14 +173,14 @@ class DirName(Homes): # {{{
         try:    l = listdir(self.p)
         except: return False
         for n in [ x for x in l if x[0] != '.' ]:
-            if isdir(u8(self.p+'/'+n)):
+            if isdir(u8(self.p + '/' + n)):
                 return True
         return False
     def _examine(self):
         p = self.normhome(self.p)
         self.s = p
         self.d = self.subs(p)
-        self.d = self.d and self.d + ['',' +'][self.c] # leave empty if empty
+        self.d = self.d and self.d + ['', ' +'][self.c]  # leave empty if empty
         return p or './'
     def parent(self):         return normpath(join(self.p, '..'))
     def is_root(self):        return self.p == '/'
@@ -181,7 +196,7 @@ class DirName(Homes): # {{{
     def __str__(self):        return self.d
     def __unicode__(self):    return self.d
     def __repr__(self):       return self.p
-    def list(self, dots = False):
+    def list(self, dots=False):
         l = [ DirName.fetch(join(self.p, x))
               for x in listdir(self.p)
               if isdir(join(self.p, x)) and (dots or x[0] != '.') ]
@@ -190,13 +205,13 @@ class DirName(Homes): # {{{
         return w
     # }}}
 
-class BookmarkFile(AbstractList): # {{{
+class BookmarkFile(AbstractList):  # {{{
     """Abstraction for bookmark file.
 
     Remember to make sure objects are explicitly destructed.
     """
     def load(self):
-        fn= self.kw.get('fn', '~/.dirt_bm')
+        fn = self.kw.get('fn', '~/.dirt_bm')
         self.fn = expanduser(fn)
         try:    return ([ DirName.fetch(l.strip())
                           for l in open(self.fn) ]
@@ -206,40 +221,41 @@ class BookmarkFile(AbstractList): # {{{
         if not self.c: return
         try:
             f = open(self.fn, 'w')
-            f.write("".join([ d.s+"\n" for d in self.l ]))
+            f.write("".join([ d.s + "\n" for d in self.l ]))
             f.close()
         except: pass
     # }}}
 
-class EnvList(AbstractList): # {{{
+class EnvList(AbstractList):  # {{{
     def load(self):
         df = DirName.fetch
-        return [ df(x) for x in environ.get('DIRT','~/').split(':') if x ]
+        return [df(x) for x in environ.get('DIRT', '~/').split(':') if x]
     def save(self):
-        if self.c: print "DIRT="+":".join(map(lambda x: x.p, self.l)),";",
+        if self.c:
+            print "DIRT=" + ":".join(map(lambda x: x.p, self.l)), ";",
     # }}}
 
 # {{{ conveniences
 class sym: pass
 
-HOME=Homes()
-DIRT=EnvList()
-BOOK=BookmarkFile()
-SHAR=BookmarkFile(fn=environ.get('DIRT_SHARED',
-                                 '/tmp/' + environ.get('USER') + '.dirt'))
+HOME = Homes()
+DIRT = EnvList()
+BOOK = BookmarkFile()
+SHAR = BookmarkFile(fn=environ.get('DIRT_SHARED',
+                                   '/tmp/' + environ.get('USER') + '.dirt'))
 # }}}
 
-class Menu(object): # {{{
+class Menu(object):  # {{{
     QUIT = sym()
     step = 10
     cc   = [ curses.A_NORMAL, curses.A_REVERSE ]
-    def _prev(o):     o.s = max(           0, o.s - 1)
-    def _next(o):     o.s = min(len(o.l) - 1, o.s + 1)
-    def _pgup(o):     o.s = max(           0, o.s - o.step)
-    def _pgdn(o):     o.s = min(len(o.l) - 1, o.s + o.step)
-    def _first(o):    o.s = 0
-    def _last(o):     o.s = len(o.l) - 1
-    def _del(o):      o.l, o.s = o.l[:o.s]+o.l[o.s+1:], min(len(o.l) - 2, o.s)
+    def _prev(o):       o.s = max(           0, o.s - 1)
+    def _next(o):       o.s = min(len(o.l) - 1, o.s + 1)
+    def _pgup(o):       o.s = max(           0, o.s - o.step)
+    def _pgdn(o):       o.s = min(len(o.l) - 1, o.s + o.step)
+    def _first(o):      o.s = 0
+    def _last(o):       o.s = len(o.l) - 1
+    def _del(o):        o.s = min(len(o.l) - 2, o.s); del(o.l[o.s])
     def _done(o, *a): raise StopIteration(a)
     def _srch(o):     return InteractiveMenu(o)
     m = { curses.KEY_UP:     _prev,
@@ -257,9 +273,10 @@ class Menu(object): # {{{
     }
     def __init__(self, w, l, s=0, extra={}):
         self.w, self.l, self.s, self.x, self._z = w, l, s, extra, None
-        self.t = getattr(self, 't', self.__class__.__name__.replace('Menu',''))
+        self.t = getattr(self, 't',
+                         self.__class__.__name__.replace('Menu', ''))
     def _repad(self):
-        _z = (len(self.l)+1, max([2]+[len(x)+1 for x in self.l]))
+        _z = (len(self.l) + 1, max([2] + [len(x) + 1 for x in self.l]))
         if self._z != _z:
             self._z = _z
             self._p = curses.newpad(*self._z)
@@ -270,21 +287,25 @@ class Menu(object): # {{{
         w, l, s, z, cc = self.w, self.l, self.s, self._z, self.cc
         y, x = w.getmaxyx()
         if y < 2 or x < 4: raise RuntimeError
-        #
+
         w.clear()
         w.addstr(0, 1, self.t, curses.A_BOLD)
-        #
-        for i in range(len(l)): p.addstr(i, 0, u8(l[i].d), cc[i==s])
-        #
-        #destwin[, sminrow, smincol, dminrow, dmincol, dmaxrow, dmaxcol ]
-        q = max(s - y/2, 0)
-        #raise RuntimeError, (z, q,0, 1,1, min(y, z[0]-1-q), min(x, z[1]-1))
-        p.overlay(w, q,0, 1,1, min(y-1, z[0]-1-q), min(x-1, z[1]-1))
-        #
+
+        for i in range(len(l)):
+            p.addstr(i, 0, u8(l[i].d), cc[i == s])
+
+        q = max(s - y / 2, 0)
+        p.overlay(w,
+                  q, 0,
+                  1, 1,
+                  min(y - 1, z[0] - 1 - q), min(x - 1, z[1] - 1))
+
         self.refresh()
+
     def refresh(self):  return self.w.refresh()
     def mapch(self, c): return self.m.get(c)
     def getch(self):    return self.w.getch()
+
     def run(self):
         while True:
             self.draw()
@@ -296,7 +317,7 @@ class Menu(object): # {{{
                 if c: return c != Menu.QUIT and c or None
     # }}}
 
-class InteractiveMenu(Menu): # {{{
+class InteractiveMenu(Menu):  # {{{
     def _bs(o):
         if not o.q: return o.ctx
         o.q = o.q[:-1]
@@ -315,17 +336,18 @@ class InteractiveMenu(Menu): # {{{
         m.sort()
         l = []
         for i, x in enumerate(m):
-            if i % 2:  l = [x]+l
-            else:      l = l+[x]
-        self.t = '/'+self.q+' '
-        self.s, self.l = len(l)/2, [ y for x, y in l ]
+            if i % 2:  l = [x] + l
+            else:      l = l + [x]
+        self.t = '/' + self.q + ' '
+        self.s = len(l) / 2
+        self.l = [ y for x, y in l ]
     def mapch(self, c):
         if not (31 < c < 127): return self.m.get(c) or self.ctx.input(c)
         self.q += chr(c)
         self.redo()
     # }}}
 
-class DirtMenu(Menu): # {{{
+class DirtMenu(Menu):  # {{{
     _desc = lambda o: o.l[o.s].c and TreeMenu(o.w, o.l[o.s])
     _ascd = lambda o: TreeMenu(o.w, o.x['here'].parent(), o.x['here'])
     def _subs(o):
@@ -354,11 +376,11 @@ class DirtMenu(Menu): # {{{
             }.items())
     # }}}
 
-class TreeMenu(DirtMenu): # {{{
+class TreeMenu(DirtMenu):  # {{{
     def _dots(o):
         o.dots = not o.dots
         o.l = DirName.fetch(o.x['here']).list(o.dots)
-        o.s = min(o.s, len(o.l)-1)
+        o.s = min(o.s, len(o.l) - 1)
     m = dict(DirtMenu.m.items() + {
             ord('.'):    _dots,
             }.items())
@@ -367,11 +389,11 @@ class TreeMenu(DirtMenu): # {{{
         h = DirName.fetch(h)
         p = DirName.fetch(p)
         l = p.list(self.dots)
-        s = (h in l and l.index(h) or len(l)/2)
+        s = (h in l and l.index(h) or len(l) / 2)
         super(TreeMenu, self).__init__(w, l, s, {'here': p})
     # }}}
 
-class ListMenu(DirtMenu): # {{{
+class ListMenu(DirtMenu):  # {{{
     it = DIRT
     def _del(o):
         o.it.remove(o.l[o.s].s)
@@ -379,24 +401,24 @@ class ListMenu(DirtMenu): # {{{
     def __init__(self, w, h=None):
         h = DirName.fetch(h or getcwd())
         l = [ DirName.fetch(x) for x in self.it ]
-        s = (h in l and l.index(h) or len(l)/2)
+        s = (h in l and l.index(h) or len(l) / 2)
         l.sort()
         super(ListMenu, self).__init__(w, l, s, {'here': h})
     # }}}
 
-class SessionMenu(ListMenu): # {{{
+class SessionMenu(ListMenu):  # {{{
     it = DIRT
     # }}}
 
-class HomeMenu(ListMenu): # {{{
+class HomeMenu(ListMenu):  # {{{
     it = HOME
     # }}}
 
-class BookmarkMenu(SessionMenu): # {{{
+class BookmarkMenu(SessionMenu):  # {{{
     it = BOOK
     # }}}
 
-class SharedMenu(SessionMenu): # {{{
+class SharedMenu(SessionMenu):  # {{{
     it = SHAR
     # }}}
 
@@ -443,7 +465,7 @@ def parse_args(argv):
     elif argv[1:2]:           return TreeMenu,     (isdir(x),) if x else ()
     else:                     return SessionMenu,  ()
 
-if __name__ == '__main__': # {{{
+if __name__ == '__main__':  # {{{
     M, al = parse_args(sys.argv)
     with CursesContext() as stdscr:
         m = M(stdscr, *al)
