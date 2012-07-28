@@ -57,11 +57,11 @@ class DirtTest(DirtTestBase):
                     see=('Documents', 'Downloads', 'Music', 'Video'))
 
     def test_shared_items(self, ):
-        dirt.SHAR.kw['fn'] = '/tmp/apu.dirt'
+        dirt.SHARED.kw['fn'] = '/tmp/apu.dirt'
         self.run_it(cls=dirt.SharedMenu,
                     see=('/usr/lib/X11', '/usr/share', '/home/apu/Music'))
 
-        self.assertEqual(dirt.SHAR.fn, '/tmp/apu.dirt')
+        self.assertEqual(dirt.SHARED.fn, '/tmp/apu.dirt')
 
 
 class DirtTestSuite(unittest.TestSuite):
