@@ -7,6 +7,7 @@ DirT is an interactive browsing enhancement for the 'cd' shell builtin.
 Currently, it has the following features:
 
  * Memory of paths visited in this shell instance. (uses environment variable)
+ * Memory of paths visited in *all* instances. (uses file in /tmp)
  * Bookmarks where you can permanently remember commonly used paths.
  * Tree browser that helps alleviate the (cd, tab-tab-tab, expletive, ls)-loop
  * Dotfile hiding/unhiding
@@ -16,7 +17,7 @@ Currently, it has the following features:
  * Interactive search, which does a lot for usability when branching factor is
    high.
  * Ignore patterns to be rid of common nuisances are implemented by
-   substitution to the empty string. (No, it *is* intuitive... to /us/...)
+   substitution to the empty string. (No, it *is* intuitive... to *us*...)
 
 Planned features:
 
