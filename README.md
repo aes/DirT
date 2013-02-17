@@ -2,6 +2,8 @@
 
 DirT is an interactive browsing enhancement for the 'cd' shell builtin.
 
+![demo animation](demo.gif)
+
 Currently, it has the following features:
 
  * Memory of paths visited in this shell instance. (uses environment variable)
