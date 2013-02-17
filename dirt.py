@@ -324,14 +324,16 @@ class Menu(object):  # {{{
     # }}}
 
 class InteractiveMenu(Menu):  # {{{
+    _desc = lambda o: o.l[o.s].c and TreeMenu(o.w, o.l[o.s])
     def _bs(o):
         if not o.q: return o.ctx
         o.q = o.q[:-1]
         o.redo()
     m = dict(Menu.m.items() + {
             curses.KEY_BACKSPACE: _bs,
+            curses.KEY_RIGHT:     _desc,
             curses.KEY_LEFT:      lambda o: o.ctx,
-            27:              lambda o: o.ctx,
+            27:                   lambda o: o.ctx,
         }.items())
     def __init__(self, ctx):
         self.ctx, self.q = ctx, ''
