@@ -28,7 +28,9 @@ function pcmd()
 PROMPT_COMMAND=pcmd
 
 # Hm. we'll need to borrow a variable. (This is being sourced, remember.)
-DIRT=$(cd $(dirname $BASH_ARGV[0]); pwd -L)/dirt.py
+DIRT=$BASH_SOURCE
+DIRT="$(test -L "$DIRT" && readlink "$DIRT" || echo "$DIRT")"
+DIRT="$(dirname $DIRT)/dirt.py"
 
 alias "s"="  eval \$(python $DIRT)"
 alias "z"="  eval \$(python $DIRT -z)"
